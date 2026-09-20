@@ -404,9 +404,9 @@ LED の位置（`bmp-boost-led-extender.kicad_pcb` から実測）:
    — 0 縦スクロール / 2 音量 / 4 横スクロール / 5 Radial Controller。
    押し込みは 0 でミドルクリック、5 で Surface Dial のボタン
 
-#### ★Radial Controller は現状ビルドできない — ドライバが ZMK v0.3 向け
+#### Radial Controller は fork を引いて動かしている
 
-`CONFIG_ZMK_HIRES_DIAL_RADIAL_CONTROLLER=y` にすると落ちる。
+`CONFIG_ZMK_HIRES_DIAL_RADIAL_CONTROLLER=y` は**上流のドライバのままでは通らない。**
 
 ```
 zmk-driver-hires-dial/src/radial_controller/endpoints.c:12:45: error: invalid initializer
@@ -418,80 +418,48 @@ zmk-driver-hires-dial/src/radial_controller/endpoints.c:12:45: error: invalid in
 struct zmk_endpoint_instance endpoint = zmk_endpoints_selected();
 ```
 
-を呼ぶが、この関数は **ZMK 本家の `#3140`（Joel Spadin, 2026-02-12,
+を呼ぶが、この関数は本家 ZMK の **`#3140`**（Joel Spadin, 2026-02-12,
 "feat(endpoints): add \"no endpoint\" value"）で
-`zmk_endpoint_get_selected()` に改名されている。**
+`zmk_endpoint_get_selected()` に改名されている。
 宣言が無いので暗黙宣言 = `int` 扱いになり、構造体の初期化子として弾かれる。
 
-**cormoran さんのフォーク固有の問題ではない。** 上流 torabo の
-`feat/input-hires-dial` ブランチは `west.yml` で ZMK を `v0.3` に固定して
-おり、ドライバはその API に書かれている。こちらは ZMK main 系（`#3140`
-以降）なので合わない。
+**ドライバのバグではない。** 上流 torabo は `west.yml` で ZMK を `v0.3` に
+固定しており、あちらでは古い名前が正しくビルドも通る。こちらが v0.4 系
+（`#3140` 以降）へ移ったことによるずれ。
 
-**ずれているのはこの1シンボルだけ。** ドライバが呼ぶ ZMK の関数は
-これだけで、残りはドライバ自身のもの。`switch` には `default:` があるので
-`#3140` が足した `ZMK_TRANSPORT_NONE` も問題にならない。直すなら:
+**対応: fork を引いている。**
+
+| | |
+|---|---|
+| fork | [`Daytona0306/zmk-driver-hires-dial`](https://github.com/Daytona0306/zmk-driver-hires-dial) |
+| ブランチ | `zmk-main-endpoints`（`main` は上流のミラーのまま） |
+| コミット | `2204195` = 上流 `353a2196` + 1コミット |
+| 差分 | 1行だけ。実体は `tools/hires-dial-zmk-main.patch` |
 
 ```diff
--    struct zmk_endpoint_instance endpoint = zmk_endpoints_selected();
-+    struct zmk_endpoint_instance endpoint = zmk_endpoint_get_selected();
+- struct zmk_endpoint_instance endpoint = zmk_endpoints_selected();
++ struct zmk_endpoint_instance endpoint = zmk_endpoint_get_selected();
 ```
 
-**方針は「fork して直す」で決まり。** 本家への PR は筋が悪い —
-せきごんさんは `west.yml` で ZMK を `v0.3` に固定しており、あちらでは
-古い名前が正しい。単純に書き換える PR は**向こうのビルドを壊す**。
-取り込んでもらうには `#if` の両対応にする必要があり、しかも
-せきごんさんが v0.4 へ移った時点で不要になる分岐を増やすだけになる。
-向こうが v0.4 に移ればこの問題は自然に消えるので、それまでの繋ぎとする。
+`switch` には `default:` があるので、`#3140` が足した `ZMK_TRANSPORT_NONE`
+は扱わなくても問題ない。
 
-### ★残作業: fork を作る（手作業が1回だけ要る）
+**本家への PR は出さない。** せきごんさんは v0.3 固定なので、単純に
+書き換える PR は**向こうのビルドを壊す**。`#if` の両対応にするしかなく、
+しかも向こうが v0.4 へ移れば不要になる分岐を増やすだけになる。
 
-このセッションからは fork を作れなかった。GitHub App の権限で
-`POST /user/repos` が 403、owner をまたぐ add_repo も v1 では非対応。
-**ブラウザで1回 Fork を押す必要がある。**
+**★上流が v0.4 へ移ったら fork を捨てること。**
+`config/west.yml` の `remote:` を `sekigon-gonnoc` に戻して
+revision を上流の SHA にするだけ。
 
-1. https://github.com/sekigon-gonnoc/zmk-driver-hires-dial → **Fork**
-   - 名前は `zmk-driver-hires-dial` のまま（`west.yml` の `name:` を変えずに済む）
-   - ★**public にすること。** CI の `west update` は匿名 clone なので、
-     private だと取ってこれない
-2. fork に `tools/hires-dial-zmk-main.patch` を当てる（`git am` で通る形）
-3. `config/west.yml` を差し替える
+#### 有効にしたことの副作用 — 接続がおかしくなったらここ
 
-```yaml
-  remotes:
-+   - name: Daytona0306
-+     url-base: https://github.com/Daytona0306
+- USB: HID インタフェースが1本増える（`USB_HID_DEVICE_COUNT` が 2 になる）
+- BLE: レポートマップが変わるため、
+  **ペアリング済みホストは再ペアリングが要る場合がある**とドライバ README にある
 
-    - name: zmk-driver-hires-dial
--     remote: sekigon-gonnoc
--     revision: 353a21964a2f6df1de128ca6e71ec63518729ab7  # track: main
-+     remote: Daytona0306
-+     revision: <パッチを当てたコミットの SHA>
-```
-
-4. `snippets/input-hires-dial-central/input-hires-dial-central.conf` の
-   `CONFIG_ZMK_HIRES_DIAL_RADIAL_CONTROLLER=y` を戻す
-5. CI が緑なら `main` へ
-
-上流が v0.4 に移ったら fork を捨てて `remote:` を `sekigon-gonnoc` に戻す。
-
-それまではエンコーダとホイールとしては動く。behavior 側に
-`behavior_hires_dial_radial_controller.c:57` と
-`..._button.c:16` の `#if` ガードがあるので、DT もキーマップもそのままで
-入力を捨てるだけの no-op になる。
-
-有効にできたときの注意: USB では HID インタフェースが1本増え
-（`USB_HID_DEVICE_COUNT` が 2 になる）、BLE ではレポートマップが変わるため、
-**ペアリング済みホストは再ペアリングが要る場合がある**とドライバ README にある。
-
-### 1-e. パッドの直径が未確認
-
-単体売りの円形パッドは **30mm / 40mm**。純正オプションは「ミニ」で
-**専用 init blob**（`mini_trackpad_iqs7211e_init`、217バイト）を使う。
-電極配置が別物ということなので小さいはずだが、**直径は repo に書かれていない。
-BOOTH の商品ページ要確認。**
-
-Extender 側のリポジトリは 30mm 用ケースの STL を同梱している。
+ダイヤルを載せたファームに焼き替えたあと、既存のペアリングで挙動が
+怪しくなったら、まずこれを疑って **`settings_reset` を焼いてペアリングし直す。**
 
 ---
 

@@ -328,9 +328,7 @@
 #if defined(TORABO_TSUKI_LP_INPUT_HIRES_DIAL)
             /* Windows の Radial Controller (Surface Dial)。
              * <4 1> は物理回転を 1/4 に縮めて送る。
-             * ★いまは CONFIG_ZMK_HIRES_DIAL_RADIAL_CONTROLLER を
-             *  立てられないので no-op。理由は
-             *  snippets/input-hires-dial-central/input-hires-dial-central.conf */
+             * Windows 以外では何も起きない。 */
             sensor-bindings = <&hires_dial_radial_controller 4 1>;
 #endif
         };

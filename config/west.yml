@@ -16,6 +16,10 @@ manifest:
       url-base: https://github.com/shakushakupanda
     - name: caksoylar
       url-base: https://github.com/caksoylar
+    # 自分の fork 置き場。上流が ZMK v0.3 前提のままなので、
+    # v0.4 系に合わせた最小パッチを当てたものをここから引く。
+    - name: Daytona0306
+      url-base: https://github.com/Daytona0306
   projects:
     # ── ZMK 本体 ────────────────────────────────────────────────
     # DYA Studio 向け。main+dya は main+custom-studio-protocol を含み、
@@ -61,9 +65,19 @@ manifest:
     #   dts/behaviors/hires_dial.dtsi と dts/bindings/ が
     #   west.yml に載っているだけで全ビルドのインクルードパスに乗る。
     #   behaviors 側は /omit-if-no-ref/ なので参照しなければ消える。
+    #
+    # ★fork を引いている★ 上流 (sekigon-gonnoc) は ZMK を v0.3 に固定して
+    #   開発しており、Radial Controller のソースが
+    #       zmk_endpoints_selected()
+    #   を呼ぶ。この関数は本家 ZMK の #3140 (2026-02-12) で
+    #       zmk_endpoint_get_selected()
+    #   へ改名されたため、v0.4 系のこちらではビルドが落ちる。
+    #   fork はその1行だけを直したもの (353a2196 + 1コミット)。
+    #   上流が v0.4 へ移ったら remote を sekigon-gonnoc に戻して fork を捨てる。
+    #   パッチの実体は tools/hires-dial-zmk-main.patch。
     - name: zmk-driver-hires-dial
-      remote: sekigon-gonnoc
-      revision: 353a21964a2f6df1de128ca6e71ec63518729ab7  # track: main
+      remote: Daytona0306
+      revision: 220419580c19a20ed0d979f12a130928c0834f69  # track: zmk-main-endpoints
     - name: zmk-feature-cdc-acm-bootloader-trigger
       remote: sekigon-gonnoc
       revision: 37ca1ef9e42d62040387590542585da033d12571  # track: main
