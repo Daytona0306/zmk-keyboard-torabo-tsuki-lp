@@ -1,0 +1,165 @@
+/* トラックボール・マルチレイヤージェスチャー定義 */
+#include <input/processors.dtsi>
+#include <dt-bindings/zmk/input_transform.h>
+#include <dt-bindings/zmk/keys.h> /* マクロでキーコードを使用するために追加 */
+#include <mouse-gesture.dtsi>
+
+/ {
+    /* --- 追加: エクスプローラ整地マクロの定義 --- */
+    macros {
+        exp_normalize: exp_normalize {
+            compatible = "zmk,behavior-macro";
+            #binding-cells = <0>;
+            wait-ms = <30>;
+            tap-ms = <40>;
+            bindings
+                = <&kp LC(LS(N6))>   /* 1. 詳細表示 (Ctrl+Shift+6) */
+                , <&kp LC(KP_PLUS)>  /* 2. 全列の幅を自動調整 (Ctrl+テンキーPlus) */
+                , <&kp ESC>          /* 3. 選択解除 */
+                , <&kp HOME>         /* 4. リストの先頭へ移動 */
+                ;
+        };
+    };
+
+    /* ジェスチャーエンジンの ON/OFF をレイヤーで切り替えるのをやめた。
+     *
+     * &mouse_gesture_on は zmk_mouse_gesture_state_changed を発火させ、
+     * 状態リスナーがグローバルの g_suppress_cursor を立てる。この旗が立つと
+     * 全てのジェスチャープロセッサが REL X/Y に対して STOP を返すため、
+     * メインチェーンに RPC 用プロセッサを置くとカーソルが止まってしまう
+     * (3a0d31e で発生。レイヤー使用後に旗が下りず無反応になった)。
+     *
+     * 代わりに各プロセッサへ always-active を付ける。プロセッサはいずれも
+     * route_lN のチェーンにしか存在せず、そのレイヤーでしか REL イベントを
+     * 受け取らないため、レイヤー連動の挙動はこれまでと変わらない。
+     * これで g_suppress_cursor は &mg_set を押したときだけ立つようになり、
+     * RPC 用プロセッサをメインチェーンに置けるようになる。 */
+
+    /* 2. 各レイヤーのジェスチャー判定ロジック */
+
+    /* Layer 5: 矢印キー (Arrow Keys) - 安定重視設定 */
+    arrow_gest_proc: arrow_gest_proc {
+        compatible = "zmk,input-processor-mouse-gesture";
+        #input-processor-cells = <0>;
+        enable-eager-mode;
+        always-active;
+        stroke-size = <15>; 
+        movement-threshold = <4>;
+        idle-timeout-ms = <50>;
+        gesture-cooldown-ms = <50>;
+
+        up    { pattern = <GESTURE_UP>;    bindings = <&kp UP>;    };
+        down  { pattern = <GESTURE_DOWN>;  bindings = <&kp DOWN>;  };
+        left  { pattern = <GESTURE_LEFT>;  bindings = <&kp LEFT>;  };
+        right { pattern = <GESTURE_RIGHT>; bindings = <&kp RIGHT>; };
+    };
+
+    /* Layer 7: ブラウザタブ操作 (Tab Control) - 軽快さ重視 */
+    tab_gest_proc: tab_gest_proc {
+        compatible = "zmk,input-processor-mouse-gesture";
+        #input-processor-cells = <0>;
+        enable-eager-mode;
+        always-active;
+        stroke-size = <20>;         
+        movement-threshold = <5>;
+        idle-timeout-ms = <100>;
+        gesture-cooldown-ms = <200>;
+
+        up    { pattern = <GESTURE_UP>;    bindings = <&kp LC(LS(T))>;   }; /* タブを復元 */
+        down  { pattern = <GESTURE_DOWN>;  bindings = <&kp LC(W)>;       }; /* タブを閉じる */
+        left  { pattern = <GESTURE_LEFT>;  bindings = <&kp LC(LS(TAB))>; }; /* 前のタブ */
+        right { pattern = <GESTURE_RIGHT>; bindings = <&kp LC(TAB)>;     }; /* 次のタブ */
+    };
+
+    /* Layer 8: 仮想デスクトップ操作 (Virtual Desktops) - 誤爆防止重視 */
+    vdesktop_gest_proc: vdesktop_gest_proc {
+        compatible = "zmk,input-processor-mouse-gesture";
+        #input-processor-cells = <0>;
+        enable-eager-mode;
+        always-active;
+        stroke-size = <20>;         /* デスクトップ切り替えは大きく弾いた時のみ */
+        movement-threshold = <5>;
+        idle-timeout-ms = <100>;
+        gesture-cooldown-ms = <200>;
+
+        /* ★更新: 上下をタスクビューとタスク切り替えに変更 */
+        up    { pattern = <GESTURE_UP>;    bindings = <&kp LG(TAB)>; };     /* タスクビュー */
+        down  { pattern = <GESTURE_DOWN>;  bindings = <&kp LA(TAB)>; };     /* タスク切り替え */
+        left  { pattern = <GESTURE_LEFT>;  bindings = <&kp LC(LG(LEFT))>; }; /* デスクトップ左へ */
+        right { pattern = <GESTURE_RIGHT>; bindings = <&kp LC(LG(RIGHT))>; };/* デスクトップ右へ */
+    };
+
+    /* Layer 9: ナビゲーション (Forward/Back) */
+    nav_gest_proc: nav_gest_proc {
+        compatible = "zmk,input-processor-mouse-gesture";
+        #input-processor-cells = <0>;
+        enable-eager-mode;
+        always-active;
+        stroke-size = <20>;         
+        movement-threshold = <5>;
+        idle-timeout-ms = <100>;
+        gesture-cooldown-ms = <200>;
+
+        up    { pattern = <GESTURE_UP>;    bindings = <&kp LA(UP)>; };    /* 上の階層へ */
+        down  { pattern = <GESTURE_DOWN>;  bindings = <&exp_normalize>; };/* ★追加: 表示リセットマクロ */
+        left  { pattern = <GESTURE_LEFT>;  bindings = <&kp LA(LEFT)>; };  /* 戻る */
+        right { pattern = <GESTURE_RIGHT>; bindings = <&kp LA(RIGHT)>; }; /* 進む */
+    };
+
+    /* ★新規 Layer 10: ウィンドウマネジメント */
+    win_gest_proc: win_gest_proc {
+        compatible = "zmk,input-processor-mouse-gesture";
+        #input-processor-cells = <0>;
+        enable-eager-mode;
+        always-active;
+        stroke-size = <20>; 
+        movement-threshold = <5>;
+        idle-timeout-ms = <100>;
+        gesture-cooldown-ms = <200>;
+
+        up    { pattern = <GESTURE_UP>;    bindings = <&kp LG(UP)>;    }; /* 最大化 */
+        down  { pattern = <GESTURE_DOWN>;  bindings = <&kp LG(DOWN)>;  }; /* 最小化/元に戻す */
+        left  { pattern = <GESTURE_LEFT>;  bindings = <&kp LG(LEFT)>;  }; /* 左半分にスナップ */
+        right { pattern = <GESTURE_RIGHT>; bindings = <&kp LG(RIGHT)>; }; /* 右半分にスナップ */
+    };
+
+    /* ★新規 Layer 11: PowerToys拡張 */
+    powertoys_gest_proc: powertoys_gest_proc {
+        compatible = "zmk,input-processor-mouse-gesture";
+        #input-processor-cells = <0>;
+        enable-eager-mode;
+        always-active;
+        stroke-size = <25>;  /* 誤爆防止のため少しだけ遊びを長めに設定 */
+        movement-threshold = <5>;
+        idle-timeout-ms = <100>;
+        gesture-cooldown-ms = <200>;
+
+        up    { pattern = <GESTURE_UP>;    bindings = <&kp LC(LG(T))>;       }; /* 常に手前に表示 */
+        down  { pattern = <GESTURE_DOWN>;  bindings = <&kp LC(LS(LG(T)))>;   }; /* Crop And Lock */
+        left  { pattern = <GESTURE_LEFT>;  bindings = <&kp LS(LG(H))>;       }; /* マウスクリックのハイライト */
+        right { pattern = <GESTURE_RIGHT>; bindings = <&kp LS(LG(D))>;       }; /* マウスジャンプ */
+    };
+};
+
+/* 3. トラックボール信号のルーティング設定 */
+&pointing_listener {
+    /* 共通のマクロ定義: 指定したレイヤーにプロセッサを紐付ける */
+    #define GESTURE_ROUTE(L, PROC) \
+        route_l##L { \
+            layers = <L>; \
+            input-processors = < \
+                &zip_xy_transform (INPUT_TRANSFORM_X_INVERT | INPUT_TRANSFORM_Y_INVERT) \
+                &PROC \
+                &zip_xy_scaler 0 1 \
+            >; \
+        };
+
+    /* 各レイヤーへのルート展開 */
+    GESTURE_ROUTE(7, arrow_gest_proc)
+    GESTURE_ROUTE(8, tab_gest_proc)
+    GESTURE_ROUTE(9, vdesktop_gest_proc)
+    GESTURE_ROUTE(10, nav_gest_proc)
+    /* ★追加: 新規レイヤーのルート展開 */
+    GESTURE_ROUTE(11, win_gest_proc)
+    GESTURE_ROUTE(12, powertoys_gest_proc)
+};

@@ -3,59 +3,395 @@
 #include <dt-bindings/zmk/keys.h>
 #include <dt-bindings/zmk/outputs.h>
 #include <dt-bindings/zmk/pointing.h>
+/* ランタイムマクロの &rmacro <slot> を提供。
+ * スロット番号は Studio でマクロを作成したときに割り当てられるので、
+ * 作成後に一覧で番号を確認してからキーに割り当てる。
+ * 未作成のスロットを割り当てても何も起きないだけで害はない。 */
+#include <behaviors/runtime_macro.dtsi>
+
+/* &mg_set N (0..NUM_SETS-1) を提供。押している間だけ RPC 側のセットが有効になる。
+ * ただし Studio からは割り当てられないので、下の mg_set_0/1/2 を使うこと。 */
+#include <mouse-gesture-rpc.dtsi>
+#include "gestures.dtsi"
+
+&mt {
+    tapping-term-ms = <180>;
+    quick-tap-ms = <300>;
+    flavor = "balanced";
+};
+
+/* DYA Studio 用の「セット番号固定」ジェスチャーキー。
+ *
+ * Studio はパラメータ付きのカスタム behavior を保持できないため、汎用の
+ * &mg_set N は Studio の一覧から割り当てられない。モジュール側は対策として
+ * パラメータ無しの compatible "zmk,behavior-mg-set-fixed" を用意しているが、
+ * ノード自体は定義していない (README にも記載なし) ので、ここで自前で作る。
+ *
+ * セット番号はノード名の末尾1文字から決まる (behavior_mg_set.c の
+ * binding_set_id())。よってノード名は必ず _0 / _1 / _2 で終わらせること。
+ * ドライバ側の判定が '0'..'2' 固定なので 3 セットまでしか作れない。
+ *
+ * 押している間だけジェスチャー判定が有効になり、離した時点で一致した
+ * ジェスチャーが発火する。 */
+/ {
+    behaviors {
+        mg_set_0: behavior_mg_set_0 {
+            compatible = "zmk,behavior-mg-set-fixed";
+            #binding-cells = <0>;
+            display-name = "Mouse Gesture Key 0";
+        };
+
+        mg_set_1: behavior_mg_set_1 {
+            compatible = "zmk,behavior-mg-set-fixed";
+            #binding-cells = <0>;
+            display-name = "Mouse Gesture Key 1";
+        };
+
+        mg_set_2: behavior_mg_set_2 {
+            compatible = "zmk,behavior-mg-set-fixed";
+            #binding-cells = <0>;
+            display-name = "Mouse Gesture Key 2";
+        };
+    };
+};
+
+/* ジェスチャーキーの hold-tap 版。&mg_ht <セット> <キーコード> で
+ * 「長押し＝ジェスチャー、タップ＝通常キー」になる。
+ *
+ * hold 側は固定版 (mg_set_0 等) ではなく汎用の &mg_set を使う。
+ * hold-tap は子のメタデータを合成して自分の param1 の選択肢にするが、
+ * 固定版は空メタデータなので param1 が選べなくなるため
+ * (behavior_hold_tap.c の hold_tap_parameter_metadata())。
+ * 汎用版ならセット番号が param1 としてそのまま渡り、名前末尾ではなく
+ * パラメータ側で解決される。
+ *
+ * flavor は tap-preferred。ボールの動きは hold-tap の判定材料に
+ * ならないため他フレーバーにする利点がなく、ストローク中に他キーへ
+ * 触れても hold に化けないぶん安全。
+ *
+ * 制約: マッチャーが ON になるのは hold 確定後なので、押してから
+ * tapping-term-ms のあいだのボール移動は通常のカーソル移動として出る。
+ * 「押して即ストローク」はできない。専用キーに素の &mg_set を置いた
+ * ほうが体感は良い。短くすると今度はタップを取りこぼす。 */
+/ {
+    behaviors {
+        mg_ht: mouse_gesture_hold_tap {
+            compatible = "zmk,behavior-hold-tap";
+            #binding-cells = <2>;
+            flavor = "tap-preferred";
+            tapping-term-ms = <150>;
+            bindings = <&mg_set>, <&kp>;
+            display-name = "Mouse Gesture Hold-Tap";
+        };
+    };
+};
 
 / {
     combos {
         compatible = "zmk,combos";
 
-        bt_clear {
-            bindings = <&bt BT_CLR>;
-            key-positions = <28 29>;
-            layers = <2>;
+        tab {
+            bindings = <&kp TAB>;
+            key-positions = <25 26>;
+        };
+
+        esc {
+            bindings = <&kp ESCAPE>;
+            key-positions = <13 14>;
+        };
+
+        caps {
+            bindings = <&kp CAPSLOCK>;
+            key-positions = <39 40>;
+        };
+
+        BS {
+            bindings = <&kp BACKSPACE>;
+            key-positions = <21 22>;
+        };
+
+        LANG_2 {
+            bindings = <&kp LANGUAGE_2>;
+            key-positions = <27 28>;
+        };
+
+        LANG_1 {
+            bindings = <&kp LANGUAGE_1>;
+            key-positions = <33 34>;
+        };
+
+        Layer_6 {
+            bindings = <&mo 6>;
+            key-positions = <47 48>;
+        };
+
+        Layer_4 {
+            bindings = <&mo 5>;
+            key-positions = <48 49>;
+        };
+
+        /* Ctrl+Alt+Tab (Windows の固定タスクスイッチャー)。
+         *
+         * ★このコンボは DYA Studio 側にも同じ内容で入れてある。
+         *   そちらを有効にしていると毎回発動し、無効にすると効いたり
+         *   効かなかったりする、という実機の結果がある。
+         *   両方に同じ内容があるのは意図的。片方だけ直さないこと。
+         *   経緯は README「コンボが keymap と DYA Studio の両方にあるとき、
+         *   勝つ側はリンク順で決まる」と「同じコンボでも、DYA 側で持たせた
+         *   ほうが安定することがある」。原因は未解明のまま打ち切った。
+         *
+         * timeout-ms は既定の 50 から広げてある。
+         * これは上記の差の説明ではない (ランタイム側の既定も 50 で、
+         * 2キーコンボの処理経路は両エンジンで等価)。
+         * 純粋に、15/16 が上段の2キー同時押しで、ホームポジションにある
+         * LANG_2 (27/28) より指が揃いにくいことへの手当て。
+         *
+         * 広げるコストは小さい。combo.c の position_state_up は離した時点で
+         * cleanup() を呼んで取り込んだイベントを流すので、普通に U を打つぶんには
+         * タイムアウトを待たされない。長押しでレイヤーに入るときだけ
+         * timeout-ms 分だけ遅れる (200 + 80 = 280ms)。 */
+        combo_ctrl_alt_tab {
+            key-positions = <15 16>;
+            bindings = <&kp LA(LC(TAB))>;
+            timeout-ms = <80>;
+        };
+    };
+
+    macros {
+        BrowsToExploree: BrowsToExploree {
+            compatible = "zmk,behavior-macro";
+            #binding-cells = <0>;
+            bindings = <&kp LS(LA(B)) &kp ENTER &kp LG(NUMBER_1)>;
+            label = "BROWSTOEXPLOREE";
+        };
+
+        to_layer_0: to_layer_0 {
+            compatible = "zmk,behavior-macro-one-param";
+            #binding-cells = <1>;
+            bindings = <&to 0 &macro_param_1to1 &kp MACRO_PLACEHOLDER>;
+            label = "TO_LAYER_0";
+        };
+
+    };
+
+    behaviors {
+        lt_to_layer_0: lt_to_layer_0 {
+            compatible = "zmk,behavior-hold-tap";
+            label = "LAYER_TAP_TO_0";
+            bindings = <&mo>, <&to_layer_0>;
+
+            #binding-cells = <2>;
+            tapping-term-ms = <180>;
         };
     };
 
     keymap {
         compatible = "zmk,keymap";
 
-        layer_0 {
+        default_layer {
+            display-name = "Base (Win)";
             bindings = <
-&kp ESC    &kp N1     &kp N2    &kp N3    &kp N4    &kp N5                                                         &kp N6       &kp N7    &kp N8     &kp N9    &kp N0                &kp BSPC
-&kp TAB    &kp Q      &kp W     &kp E     &kp R     &kp T                                                          &kp Y        &kp U     &kp I      &kp O     &kp P                 &kp BSPC
-&kp CAPS   &kp A      &kp S     &kp D     &kp F     &kp G        &mkp LCLK                  &mkp RCLK              &kp H        &kp J     &kp K      &kp L     &kp SEMI              &kp SQT
-&kp LSHFT  &kp Z      &kp X     &kp C     &kp V     &kp B        &kp SPACE                  &kp RET                &kp N        &kp M     &kp COMMA  &kp DOT   &mt RIGHT_SHIFT FSLH  &kp RSHFT
-&kp LCTRL  &kp LCTRL  &kp LGUI  &kp LALT  &kp BSPC  &lt 2 SPACE  &mt LEFT_SHIFT LANGUAGE_1  &mt RSHIFT LANGUAGE_2  &lt 3 ENTER  &kp BSPC  &kp RALT   &kp RGUI  &kp RCTRL             &kp RCTRL
-            >;
+&trans  &trans            &trans    &trans    &trans                       &trans                                                 &trans       &trans  &trans   &trans           &trans                      &trans
+&trans  &lt 12 Q          &lt 9 L   &lt 11 U  &lt 8 COMMA                  &lt 10 PERIOD                                           &kp F        &kp W   &kp R    &kp Y            &kp P                       &trans
+&trans  &mt LCTRL E       &kp I     &lt 7 A   &lt 4 O                      &kp MINUS      &trans                      &trans      &kp K        &kp T   &lt 7 N  &kp S            &kp H                       &trans
+&trans  &mt LEFT_SHIFT Z  &kp X     &kp C     &kp V                        &kp SEMICOLON  &kp LA(LG(K))               &kp C_MUTE  &kp G        &kp D   &kp M    &mt RIGHT_ALT J  &lt 4 B                     &trans
+&trans  &kp LEFT_ALT      &kp LGUI  &kp TAB   &mt LEFT_SHIFT INT_MUHENKAN  &lt 5 ENTER    &mt LEFT_CONTROL BACKSPACE  &lt 3 DEL   &lt 2 SPACE  &trans  &trans   &kp RIGHT_ALT    &mt RIGHT_SHIFT INT_HENKAN  &trans
+#if defined(TORABO_TSUKI_LP_KSCAN_4_DIRECTION_SWITCH)
+/* 4方向スイッチ: 上 下 左 右 押し込み (snippets/kscan-4-direction-switch)。
+ * スニペットを指定しないビルドではこの5個は存在しない。 */
+&msc SCRL_UP  &msc SCRL_DOWN  &msc SCRL_LEFT  &msc SCRL_RIGHT  &mkp MCLK
+#endif
+>;
         };
 
-        layer_1 {
+        /* index 1: iPad / iOS 用ベースレイヤー。
+         *
+         * default-layer モジュールは常時 ON のレイヤー0を落とさずに、この
+         * レイヤーを上に重ねる (src/default_layer.c の apply_layer が
+         * global_default を deactivate 対象から外している)。
+         * よって差分だけ書けばよく、&trans はレイヤー0に落ちる。
+         *
+         * 置き場所が 1 なのは必然。ZMK はキー押下時にインデックスの高い
+         * レイヤーから順に探すため (keymap.c の
+         * zmk_keymap_position_state_changed)、末尾に置くと常時 ON の
+         * このレイヤーがモーメンタリなレイヤーを全部上書きしてしまう。
+         * 実際、末尾 (12) に置いた版では MOUSE レイヤーの &to 0 が潰れて
+         * レイヤーから抜けられなくなっていた。
+         * レイヤー0の直上に置けば、上の 2..12 が正しく優先される。
+         *
+         * Windows との違い:
+         *   - Ctrl と Cmd を入れ替え (コピペ等を Cmd 側に寄せる)
+         *   - IME 切替を 無変換/変換 から 英数(LANG2)/かな(LANG1) へ
+         *
+         * DYA Studio の「OS ごとのデフォルトレイヤー」で iOS → 12 を
+         * 割り当てると、iPad に接続したときだけ自動で有効になる。 */
+        iPad {
+            display-name = "iPad";
             bindings = <
-&trans  &trans  &trans  &trans     &trans     &trans                  &trans  &trans     &trans     &trans  &trans  &trans
-&trans  &trans  &trans  &trans     &trans     &trans                  &trans  &trans     &trans     &trans  &trans  &trans
-&trans  &trans  &trans  &mkp RCLK  &mkp LCLK  &trans  &trans  &trans  &trans  &mkp LCLK  &mkp RCLK  &trans  &trans  &trans
-&trans  &trans  &trans  &trans     &trans     &trans  &trans  &trans  &trans  &trans     &trans     &trans  &trans  &trans
-&trans  &trans  &trans  &trans     &trans     &trans  &trans  &trans  &trans  &trans     &trans     &trans  &trans  &trans
-            >;
+&trans  &trans      &trans      &trans  &trans                &trans                                        &trans  &trans  &trans  &trans  &trans                &trans
+&trans  &trans      &trans      &trans  &trans                &trans                                        &trans  &trans  &trans  &trans  &trans                &trans
+&trans  &mt LGUI E  &trans      &trans  &trans                &trans  &trans                  &trans  &trans  &trans  &trans  &trans  &trans                 &trans
+&trans  &trans      &trans      &trans  &trans                &trans  &trans                  &trans  &trans  &trans  &trans  &trans  &trans                 &trans
+&trans  &trans      &kp LCTRL   &trans  &mt LEFT_SHIFT LANG2  &trans  &mt LEFT_GUI BACKSPACE  &trans  &trans  &trans  &trans  &trans  &mt RIGHT_SHIFT LANG1  &trans
+#if defined(TORABO_TSUKI_LP_KSCAN_4_DIRECTION_SWITCH)
+&trans  &trans  &trans  &trans  &trans
+#endif
+>;
         };
 
-        layer_2 {
+        NUM,SYM1 {
+            display-name = "NUM/SYM1";
             bindings = <
-&trans  &trans            &trans            &trans      &trans      &trans                      &trans          &trans         &trans            &trans             &trans         &trans
-&trans  &kp LS(NUMBER_1)  &kp LS(NUMBER_2)  &kp LS(N3)  &kp LS(N4)  &kp LS(N5)                  &kp LS(N6)      &kp LS(N7)     &kp LS(N8)        &kp LS(N9)         &kp LS(N0)     &trans
-&trans  &kp N1            &kp N2            &kp N3      &kp N4      &kp N5      &trans  &trans  &kp LEFT_BRACE  &kp MINUS      &kp EQUAL         &kp RIGHT_BRACE    &kp COLON      &trans
-&trans  &kp N6            &kp N7            &kp N8      &kp N9      &kp N0      &trans  &trans  &kp LS(MINUS)   &kp LS(EQUAL)  &kp LEFT_BRACKET  &kp RIGHT_BRACKET  &kp BACKSLASH  &trans
-&trans  &trans            &trans            &trans      &trans      &trans      &trans  &trans  &kp TAB         &kp DEL        &trans            &trans             &trans         &trans
-            >;
+&trans  &trans                    &trans                    &trans           &trans                     &trans                                          &trans         &trans                &trans             &trans                &trans          &trans
+&trans  &kp NUMBER_1              &kp NUMBER_2              &kp NUMBER_3     &kp NUMBER_4               &kp N5                                          &kp NUMBER_6   &kp N7                &kp N8             &kp N9                &kp N0          &trans
+&trans  &kp EQUAL                 &kp LEFT_BRACKET          &kp SLASH        &kp MINUS                  &kp LS(INTERNATIONAL_1)  &trans         &trans  &kp SEMICOLON  &kp SQT               &kp RIGHT_BRACKET  &kp BACKSLASH         &kp INT_YEN     &trans
+&trans  &kp LS(LA(LC(NUMBER_2)))  &kp LS(LC(LA(NUMBER_6)))  &kp PRINTSCREEN  &kp LS(LG(S))              &kp LA(PRINTSCREEN)      &kp LG(LS(V))  &trans  &kp CAPSLOCK   &kp LS(LC(NUMBER_2))  &kp LS(LC(I))      &kp LS(LC(NUMBER_1))  &kp SCROLLLOCK  &trans
+&trans  &trans                    &trans                    &trans           &mt LEFT_SHIFT LANGUAGE_1  &kp LG(LS(V))            &trans         &trans  &trans         &trans                &trans             &trans                &to 4           &trans
+#if defined(TORABO_TSUKI_LP_KSCAN_4_DIRECTION_SWITCH)
+&trans  &trans  &trans  &trans  &trans
+#endif
+>;
         };
 
-        layer_3 {
+        SYM2 {
+            display-name = "SYM2";
             bindings = <
-&trans  &trans   &trans   &trans        &trans        &trans                      &trans            &trans     &trans         &trans     &trans      &trans
-&trans  &kp F1   &kp F2   &kp F3        &kp F4        &kp F5                      &kp HOME          &kp PG_UP  &kp PAGE_DOWN  &kp END    &kp ESCAPE  &trans
-&trans  &kp F6   &kp F7   &kp F8        &kp F9        &kp F10     &trans  &trans  &kp LEFT          &kp DOWN   &kp UP_ARROW   &kp RIGHT  &kp TAB     &trans
-&trans  &kp F11  &kp F12  &out OUT_USB  &out OUT_BLE  &bt BT_NXT  &trans  &trans  &kp SINGLE_QUOTE  &kp DQT    &kp GRAVE      &kp TILDE  &kp PIPE    &trans
-&trans  &trans   &trans   &trans        &kp DELETE    &kp TAB     &trans  &trans  &trans            &trans     &trans         &trans     &trans      &trans
-            >;
+&trans  &trans             &trans              &trans            &trans                     &trans                                          &trans                  &trans                   &trans                 &trans                      &trans                       &trans
+&trans  &kp LS(NUMBER_1)   &kp LS(NUMBER_2)    &kp LS(NUMBER_3)  &kp LS(NUMBER_4)           &kp LS(N5)                                      &kp LS(NUMBER_6)        &kp LS(N7)               &kp LS(N8)             &kp LS(N9)                  &kp LS(N0)                   &trans
+&trans  &kp LS(EQUAL)      &kp LS(LEFT_BRACE)  &kp QUESTION      &kp LS(UNDERSCORE)         &kp LS(INTERNATIONAL_1)  &trans         &trans  &kp LS(SEMICOLON)       &kp LS(SQT)              &kp LS(RIGHT_BRACKET)  &kp LS(BACKSLASH)           &kp LS(INT_YEN)              &trans
+&trans  &kp LS(LA(MINUS))  &trans              &trans            &BrowsToExploree           &rmacro 0                      &kp LG(LA(U))  &trans  &kp LC(LG(LEFT_ARROW))  &kp LC(LG(RIGHT_ARROW))  &kp LA(LC(LG(D)))      &kp LC(LA(LG(LEFT_ARROW)))  &kp LA(LC(LG(RIGHT_ARROW)))  &trans
+&trans  &trans             &trans              &trans            &mt LEFT_SHIFT LANGUAGE_2  &trans                   &trans         &trans  &trans                  &trans                   &trans                 &trans                      &kp LC(LG(F4))               &trans
+#if defined(TORABO_TSUKI_LP_KSCAN_4_DIRECTION_SWITCH)
+&trans  &trans  &trans  &trans  &trans
+#endif
+>;
         };
+
+        MOUSE {
+            display-name = "Mouse";
+            bindings = <
+&trans  &trans      &trans        &trans            &trans        &trans                        &trans      &trans        &trans           &trans    &trans    &trans
+&trans  &kp ESCAPE  &kp N7        &kp N8            &kp N9        &trans                        &kp C_MUTE  &kp C_VOL_DN  &kp C_VOLUME_UP  &trans    &trans    &trans
+&trans  &kp EQUAL   &kp NUMBER_4  &kp N5            &kp NUMBER_6  &kp KP_MINUS  &trans  &trans  &mkp MB5    &trans        &mo 5            &trans    &mkp MB5  &trans
+&trans  &kp N0      &kp NUMBER_1  &kp NUMBER_2      &kp NUMBER_3  &kp KP_PLUS   &trans  &trans  &mkp MB4    &mkp MB1      &mkp MB3         &mkp MB2  &mkp MB4  &trans
+&trans  &kp DOT     &kp COMMA     &kp LEFT_BRACKET  &trans        &trans        &trans  &trans  &trans      &trans        &trans           &to 0     &to 0     &trans
+#if defined(TORABO_TSUKI_LP_KSCAN_4_DIRECTION_SWITCH)
+&trans  &trans  &trans  &trans  &trans
+#endif
+>;
+        };
+
+        NUM-SCROLL {
+            display-name = "Scroll";
+            bindings = <
+&trans  &trans      &trans            &trans            &trans            &trans                  &trans              &trans        &trans        &trans        &trans           &trans
+&trans  &trans      &kp LC(N7)        &kp LC(N8)        &kp LC(N9)        &trans                  &kp LANGUAGE_2      &kp N7        &kp N8        &kp N9        &kp KP_SLASH     &trans
+&trans  &trans      &kp LC(NUMBER_4)  &kp LC(N5)        &kp LC(NUMBER_6)  &trans  &trans  &trans  &kp LS(UNDERSCORE)  &kp NUMBER_4  &kp N5        &kp NUMBER_6  &kp KP_MULTIPLY  &trans
+&trans  &kp LC(N0)  &kp LC(NUMBER_1)  &kp LC(NUMBER_2)  &kp LC(NUMBER_3)  &trans  &trans  &trans  &kp N0              &kp NUMBER_1  &kp NUMBER_2  &kp NUMBER_3  &kp KP_MINUS     &trans
+&trans  &trans      &trans            &trans            &trans            &trans  &trans  &trans  &kp DOT             &trans        &trans        &trans        &kp KP_PLUS      &trans
+#if defined(TORABO_TSUKI_LP_KSCAN_4_DIRECTION_SWITCH)
+&trans  &trans  &trans  &trans  &trans
+#endif
+>;
+        };
+
+        bluetooth {
+            display-name = "Bluetooth";
+            bindings = <
+&trans  &trans         &trans         &trans         &trans          &trans                               &trans  &trans  &trans  &trans  &trans          &trans
+&trans  &bt BT_SEL 0   &bt BT_SEL 1   &bt BT_SEL 2   &bt BT_SEL 3    &bt BT_SEL 4                         &trans  &trans  &trans  &trans  &trans          &trans
+&trans  &bt BT_DISC 0  &bt BT_DISC 1  &bt BT_DISC 2  &bt BT_DISC 3   &bt BT_DISC 4  &trans        &trans  &trans  &trans  &trans  &trans  &trans          &trans
+&trans  &bt BT_SEL 5   &bt BT_SEL 6   &trans         &studio_unlock  &out OUT_BLE   &out OUT_USB  &trans  &trans  &trans  &trans  &trans  &bootloader     &trans
+&trans  &bt BT_DISC 5  &bt BT_DISC 6  &trans         &trans          &trans         &bt BT_CLR    &trans  &trans  &trans  &trans  &trans  &bt BT_CLR_ALL  &trans
+#if defined(TORABO_TSUKI_LP_KSCAN_4_DIRECTION_SWITCH)
+&trans  &trans  &trans  &trans  &trans
+#endif
+>;
+        };
+
+        gest_arrow {
+            display-name = "Gest: Arrow";
+            bindings = <
+&trans  &trans   &trans  &trans   &trans   &trans                   &trans         &trans          &trans          &trans           &trans             &trans
+&trans  &kp ESC  &kp F1  &kp F2   &kp F3   &kp F4                   &kp INS        &kp HOME        &kp UP_ARROW    &kp END          &kp PG_UP          &trans
+&trans  &trans   &kp F5  &kp F6   &kp F7   &kp F8   &trans  &trans  &kp LC(TAB)    &kp LEFT_ARROW  &kp UP_ARROW    &kp RIGHT_ARROW  &kp PAGE_DOWN      &trans
+&trans  &trans   &kp F9  &kp F10  &kp F11  &kp F12  &trans  &trans  &kp LG(LS(V))  &kp LEFT_ARROW  &kp DOWN_ARROW  &kp RIGHT_ARROW  &kp LC(LG(LA(V)))  &trans
+&trans  &trans   &trans  &trans   &trans   &trans   &trans  &trans  &trans         &trans          &trans          &trans           &trans             &trans
+#if defined(TORABO_TSUKI_LP_KSCAN_4_DIRECTION_SWITCH)
+&trans  &trans  &trans  &trans  &trans
+#endif
+>;
+        };
+
+        gest_tab {
+            display-name = "Gest: Tab";
+            bindings = <
+&trans  &trans  &trans  &trans  &trans  &trans                  &trans  &trans  &trans  &trans  &trans  &trans
+&trans  &trans  &trans  &trans  &trans  &trans                  &trans  &trans  &trans  &trans  &trans  &trans
+&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
+&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
+&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
+#if defined(TORABO_TSUKI_LP_KSCAN_4_DIRECTION_SWITCH)
+&trans  &trans  &trans  &trans  &trans
+#endif
+>;
+        };
+
+        gest_vdesktop {
+            display-name = "Gest: VDesktop";
+            bindings = <
+&trans  &trans  &trans  &trans  &trans  &trans                  &trans  &trans  &trans  &trans  &trans  &trans
+&trans  &trans  &trans  &trans  &trans  &trans                  &trans  &trans  &trans  &trans  &trans  &trans
+&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
+&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
+&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
+#if defined(TORABO_TSUKI_LP_KSCAN_4_DIRECTION_SWITCH)
+&trans  &trans  &trans  &trans  &trans
+#endif
+>;
+        };
+
+        gest_nav {
+            display-name = "Gest: Nav";
+            bindings = <
+&trans  &trans  &trans  &trans  &trans  &trans                  &trans  &trans  &trans  &trans  &trans  &trans
+&trans  &trans  &trans  &trans  &trans  &trans                  &trans  &trans  &trans  &trans  &trans  &trans
+&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
+&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
+&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
+#if defined(TORABO_TSUKI_LP_KSCAN_4_DIRECTION_SWITCH)
+&trans  &trans  &trans  &trans  &trans
+#endif
+>;
+        };
+
+        gest_window {
+            display-name = "Gest: Window";
+            bindings = <
+&trans  &trans  &trans  &trans  &trans  &trans                  &trans  &trans  &trans  &trans  &trans  &trans
+&trans  &trans  &trans  &trans  &trans  &trans                  &trans  &trans  &trans  &trans  &trans  &trans
+&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
+&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
+&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
+#if defined(TORABO_TSUKI_LP_KSCAN_4_DIRECTION_SWITCH)
+&trans  &trans  &trans  &trans  &trans
+#endif
+>;
+        };
+
+        gest_powertoys {
+            display-name = "Gest: PowerToys";
+            bindings = <
+&trans  &trans  &trans  &trans  &trans  &trans                  &trans  &trans  &trans  &trans  &trans  &trans
+&trans  &trans  &trans  &trans  &trans  &trans                  &trans  &trans  &trans  &trans  &trans  &trans
+&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
+&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
+&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
+#if defined(TORABO_TSUKI_LP_KSCAN_4_DIRECTION_SWITCH)
+&trans  &trans  &trans  &trans  &trans
+#endif
+>;
+        };
+
     };
 };

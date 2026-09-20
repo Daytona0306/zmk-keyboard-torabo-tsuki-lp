@@ -1,6 +1,8 @@
-name: Build ZMK firmware
 on: [push, pull_request, workflow_dispatch]
 
+# NOTE: ZMK v0.4 (Zephyr 4.1 / HWMv2) 対応のため再利用ワークフローを main へ。
+#       v0.3 タグのワークフローは Zephyr 3.5 前提のビルドコンテナとボード命名を
+#       想定しており、HWMv2 のボードではビルドできない。
 jobs:
   build:
-    uses: zmkfirmware/zmk/.github/workflows/build-user-config.yml@v0.3
+    uses: zmkfirmware/zmk/.github/workflows/build-user-config.yml@main

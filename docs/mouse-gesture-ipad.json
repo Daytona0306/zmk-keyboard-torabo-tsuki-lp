@@ -1,0 +1,81 @@
+{
+  "format": "zmk-mouse-gesture",
+  "version": 1,
+  "gestures": [
+    {
+      "name": "Home",
+      "pattern": {
+        "directions": [
+          0
+        ]
+      },
+      "binding": {
+        "behavior": "key_press",
+        "param1": 134217739,
+        "param2": 0
+      },
+      "enabled": true,
+      "setId": 0
+    },
+    {
+      "name": "AppSwitch",
+      "pattern": {
+        "directions": [
+          2
+        ]
+      },
+      "binding": {
+        "behavior": "key_press",
+        "param1": 134217771,
+        "param2": 0
+      },
+      "enabled": true,
+      "setId": 0
+    },
+    {
+      "name": "Back",
+      "pattern": {
+        "directions": [
+          3
+        ]
+      },
+      "binding": {
+        "behavior": "key_press",
+        "param1": 134217775,
+        "param2": 0
+      },
+      "enabled": true,
+      "setId": 0
+    },
+    {
+      "name": "Forward",
+      "pattern": {
+        "directions": [
+          1
+        ]
+      },
+      "binding": {
+        "behavior": "key_press",
+        "param1": 134217776,
+        "param2": 0
+      },
+      "enabled": true,
+      "setId": 0
+    }
+  ],
+  "settings": {
+    "strokeSize": 20,
+    "idleTimeoutMs": 100,
+    "gestureCooldownMs": 200,
+    "movementThreshold": 5,
+    "enableEagerMode": false,
+    "alwaysActive": false,
+    "inertialScrollEnabled": false,
+    "inertialScrollTickMs": 20,
+    "inertialScrollIdleMs": 28,
+    "inertialScrollDecayPercent": 86,
+    "inertialScrollImpulsePercent": 180,
+    "inertialScrollMinVelocityQ8": 96,
+    "inertialScrollMaxTicks": 36
+  }
+}

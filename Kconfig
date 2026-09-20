@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: MIT
+
+# bmp_boost (zmk-component-bmp-boost の master) は HWMv2 へ移行済みだが、
+# Kconfig.bmp_boost が `select ZMK_BOARD_COMPAT` を宣言していない。
+#
+# ZMK のビルドワークフローはこのシンボルが y でないと
+# "Missing ZMK Compat" チェックへ入り、そこで
+#   west boards ... --format "{qualifiers}" | grep "zmk"
+# が空振りする。当該ステップは `sh -e` で実行されるため、grep の非ゼロ終了で
+# スクリプトごと中断し、本来は警告どまりのはずが必ずビルド失敗になる。
+#
+# ボードは実際に ZMK 専用で Zephyr 4.1 でもビルドが通ることを確認済み
+# (settings_reset ターゲットはビルド成功し、このチェックだけで落ちていた)。
+# 上流のボードが宣言するまでの回避として既定値を与える。
+config ZMK_BOARD_COMPAT
+    default y if BOARD_BMP_BOOST

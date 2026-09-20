@@ -1,27 +1,65 @@
+# ===========================================================================
+#  焼くもの
+#
+#      torabo_tsuki_lp_right_central   右手 = トラックボール + Studio + キーマップ + LED Extender
+#      torabo_tsuki_lp_left_peripheral 左手 = キーのみ
+#      settings_reset                  設定消去
+#
+#  左右は必ず組で焼くこと。central 側が Studio・HID・キーマップを持つ。
+#
+#  組み合わせを全部ビルドすると CI 時間を食うので、実際に使う構成だけに絞っている。
+#  スニペットは全部リポジトリに残してあるので、snippet 行の差し替えだけで戻せる。
+#
+#  ── LED Extender (led-plus) ─────────────────────────────────────────
+#  ★central 側にだけ付けること。LED の無い側で有効にすると
+#  led-red エイリアスが無くてビルドが落ちる。また表示内容の多く
+#  (相方の電池残量 / BLEプロファイル / レイヤー色) は central 専用。
+#
+#  ── ★ミニトラックパッドが届いたら ───────────────────────────────────
+#  左右そろえて差し替えること。左のパッドは scroller-mode なので指の移動は
+#  X/Y ではなく INPUT_REL_WHEEL として飛び、input-split で右手 central へ転送される。
+#  受ける側が input-split-listener。
+#
+#    left:  "studio-rpc-usb-uart input-trackpad-mini input-split"
+#    right: "studio-rpc-usb-uart split-central input-trackball input-listener \
+#            input-split-listener input-scroll-inertia"
+#
+#  カーソルとして使いたいなら左を input-trackpad に差し替える。
+#  向きが逆なら snippets/input-trackpad-mini/ の DT に v-invert / h-invert を足す。
+#
+#  ── 他の構成 ─────────────────────────────────────────────────────────
+#  両手にトラックボール
+#    left:  "studio-rpc-usb-uart input-trackball input-split"
+#    right: パッドのときと同じ (input-split-listener 入り)
+#  左に4方向スイッチ ★左手側専用。右に付けるとビルドが #error で止まる
+#    left:  "studio-rpc-usb-uart kscan-4-direction-switch"
+#    right: "studio-rpc-usb-uart split-central input-trackball input-listener \
+#            input-scroll-inertia kscan-4-direction-switch-central"
+#  左右を入れ替える (左にボール + 右 peripheral)
+#    left:  "studio-rpc-usb-uart split-central input-trackball input-listener"
+#    right: "studio-rpc-usb-uart"
+#  拡張ポートをもう1個生やして片側に2デバイス ★未検証
+#    right の snippet に input-ext-trackpad を足す。
+#    BMP Boost の「追加IO」を FFC で引き出す小基板が要る。候補は2つあり、
+#    どちらも同じ4本 (SDA P0.17 / SCL P0.21 / RDY P0.31 / 電源 P0.24) を出す。
+#      - BMP Boost LED Extender (せきごんさん)  ← いま右手に付いているもの
+#      - ngsyst/bmp_boost_extender_mini
+#    LED Extender の LED は P1.02 / P1.10 / P1.11 なので led-plus とは衝突しない。
+#
+#  拡張モジュールは左右それぞれ1個まで。トラックボール / トラックパッド /
+#  ハイレゾダイヤル / 4方向スイッチは同じ FFC ポート (P0.16/18/19/20) を
+#  取り合うため、片側に2個は付かない。詳しくは README。
+# ===========================================================================
 include:
   - board: bmp_boost
-    shield: torabo_tsuki_lp_left
-    snippet: "studio-rpc-usb-uart split-central input-trackball input-listener"
-    artifact-name: torabo_tsuki_lp_left_central
-  - board: bmp_boost
     shield: torabo_tsuki_lp_right
-    snippet: studio-rpc-usb-uart
-    artifact-name: torabo_tsuki_lp_right_peripheral
+    snippet: "studio-rpc-usb-uart split-central input-trackball input-listener input-scroll-inertia led-plus"
+    artifact-name: torabo_tsuki_lp_right_central
+
   - board: bmp_boost
     shield: torabo_tsuki_lp_left
     snippet: studio-rpc-usb-uart
     artifact-name: torabo_tsuki_lp_left_peripheral
-  - board: bmp_boost
-    shield: torabo_tsuki_lp_right
-    snippet: "studio-rpc-usb-uart split-central input-trackball input-listener"
-    artifact-name: torabo_tsuki_lp_right_central
-  - board: bmp_boost
-    shield: torabo_tsuki_lp_left
-    snippet: "studio-rpc-usb-uart input-trackball input-split"
-    artifact-name: torabo_tsuki_lp_double_ball_left_peripheral
-  - board: bmp_boost
-    shield: torabo_tsuki_lp_right
-    snippet: "studio-rpc-usb-uart split-central input-trackball input-listener input-split-listener"
-    artifact-name: torabo_tsuki_lp_double_ball_right_central
+
   - board: bmp_boost
     shield: settings_reset

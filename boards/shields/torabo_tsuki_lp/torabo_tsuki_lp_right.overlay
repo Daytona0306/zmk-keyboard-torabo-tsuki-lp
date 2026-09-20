@@ -1,11 +1,135 @@
-#define TORABO_TSUKI_LP_RIGHT 1
-
 #include "torabo_tsuki_lp.dtsi"
 #include <input/processors.dtsi>
 #include <dt-bindings/zmk/input_transform.h>
+#include <input/processors/runtime-input-processor.dtsi>
+#include <scroll-snap.dtsi>
+#include <dt-bindings/zmk/mouse-gesture.h>
+
+/* ─────────────────────────────────────────────────────────────
+ * RPC 版マウスジェスチャー (shakushakupanda/zmk-module-mouse-gesture-rpc)
+ *
+ * zmk_mouse_gesture_runtime_set() は DT_DRV_INST(0) 固定で
+ * 「最初に登録されたインスタンス」の trie だけを置き換える。
+ * gestures.dtsi の6プロセッサより先に定義して0番を取らせることで、
+ * 既存のレイヤー連動ジェスチャーを温存したまま併用できる。
+ *
+ * always-active は付けない。&mg_set N を押している間だけ判定が有効になる。
+ * 値は Studio / Web UI から実行時に変更できるので DT 側は初期値。
+ * ───────────────────────────────────────────────────────── */
+/ {
+    /* NOTE: ノード名を mouse_gesture にしないこと。
+     * mouse-gesture.dtsi (gestures.dtsi 経由で include される) が
+     * 同名のビヘイビアノード
+     *   /omit-if-no-ref/ mouse_gesture: mouse_gesture {
+     *       compatible = "zmk,behavior-mouse-gesture"; ... }
+     * を定義しており、DTS 上でマージされて binding 不一致で落ちる。 */
+    /* このノードはメインチェーンに配線している。
+     * 以前これでトラックボールが停止したが (3a0d31e)、原因は gestures.dtsi の
+     * layer_listeners が &mouse_gesture_on 経由でグローバルの g_suppress_cursor
+     * を立てたまま戻らなくなることだった。処理関数は
+     *     return g_suppress_cursor ? ZMK_INPUT_PROC_STOP : ZMK_INPUT_PROC_CONTINUE;
+     * なので、旗が立つと全レイヤーでカーソルが止まる。
+     * layer_listeners を廃止し各プロセッサへ always-active を付けたことで、
+     * この旗は &mg_set を押している間だけ立つようになった。 */
+    mg: rpc_mouse_gesture {
+        compatible = "zmk,input-processor-mouse-gesture";
+        #input-processor-cells = <0>;
+        /* モジュール既定の 200 はこのトラックボールには大きすぎる
+         * (gestures.dtsi の DT 側6セットは 15〜25)。Studio の Reset は
+         * ここの値を再シードするので、既定値の側を実機に合わせておく。 */
+        stroke-size = <20>;
+        movement-threshold = <5>;
+        idle-timeout-ms = <100>;
+        gesture-cooldown-ms = <200>;
+
+        /* trie 構築のためのプレースホルダ。実際の割り当ては RPC で上書きされる。 */
+        placeholder {
+            pattern = <GESTURE_UP GESTURE_RIGHT>;
+            bindings = <&kp ESC>;
+        };
+    };
+};
+
+//Scroll inertia processor
+/{
+    scroll_inertia_free: scroll_inertia_free {
+        compatible = "zmk,input-processor-scroll-inertia";
+        #input-processor-cells = <0>;
+        /* このプロセッサは ZMK のマウス HID API を使うため central 専用。
+         * この overlay は central/peripheral 両方のビルドで読まれるので、
+         * 既定は無効にし input-scroll-inertia snippet で有効化する。
+         * (無効なら DT_HAS_..._ENABLED が偽になり C ファイルごと除外される) */
+        status = "disabled";
+        axis      = <0>;          /* 両軸 — 斜めスクロール可能 */
+        layer     = <5>;          /* NUM-SCROLL レイヤー */
+        scale     = <1000>;
+        scale-div = <1000>;
+
+        tick = <17>;
+        release = <51>;
+        /* 慣性継続時間の安全上限 (既定 6000ms)。decay-fast を緩めると
+         * 自然減衰より先にここで切られて伸びが出なくなるため、天井を外す。
+         * 同方向に start 以上の入力が来ると新しい弾きとして再セットされる。 */
+        span = <12000>;
+
+        /* ── 弾き検出のゲート ──
+         * この3つが「小さい動きでは慣性に入らず、大きく弾いたときだけ
+         * 効く」を決めている。以前は start=1 / move=2 / min-events=2 と
+         * 全開にしていたため、ちょっと触っただけでも armed になり、
+         * 弾いたときとの差が出なかった。既定値寄りに戻す。 */
+        start = <40>;       /* 慣性に入る最低ピーク速度 (既定 40) */
+        move = <60>;        /* 発動に必要な累積移動量 (既定 80) */
+        min-events = <8>;   /* EMA 収束待ち・ノイズ除去 (既定 10) */
+
+        /* ── 転がり方 ── */
+        gain = <300>;       /* EMA の入力重み。gain + blend = 1000 */
+        blend = <700>;      /* EMA の履歴重み */
+        friction = <20>;    /* 毎ティックの定数減速 (千分率)。下げると伸びる */
+        limit = <900>;      /* 速度上限 (既定 600)。上げると弾きが伸びる */
+        stop = <1>;         /* これを下回ったら即停止 */
+
+        /* ── 多段減衰 (実験) ──
+         * 既定は fast=0 / slow=0 で「単一カーブ」。全速度域が同じ減衰率
+         * decay-* = 990 (×0.99/tick) で落ちる。ここを速度で分ける。
+         *
+         * decay-* は減衰率であって増幅率ではない。1000 未満しか意味が無く、
+         * 「速く弾いたら速度が倍になる」ことはできない。できるのは
+         * 「速い間は減りにくくする」= 伸びる、という形だけ。
+         *   src/scroll_inertia_math.h の select_decay_rate():
+         *     speed > fast ? decay_fast : speed > slow ? decay_slow : decay_tail
+         *
+         * 速度の目盛りは start=40 (慣性に入る最低ピーク速度) から
+         * limit=900 (上限) までなので、その間に境界を置く。
+         *
+         * NOTE: tick=17 は既定の 8 より大きい。decay は tick ごとに
+         *   掛かるので、実時間あたりの減衰は既定より緩い
+         *   (990 なら 1秒で 0.99^59≈0.55、既定の tick=8 だと 0.99^125≈0.29)。
+         *   既定値の感覚をそのまま持ち込まないこと。 */
+        fast       = <250>;   /* これを超えた速度 = 「大きく弾いた」 */
+        decay-fast = <998>;   /* 高速域は減りにくく → 長く伸びる。996 -> 998 */
+        decay-slow = <988>;   /* 中速域は既定よりやや早く収束 */
+        slow       = <60>;    /* ここから下がテールゾーン */
+        decay-tail = <985>;   /* 低速の尻尾は早めに畳んでダラダラさせない */
+    };
+};
 
 &pointing_listener {
-    input-processors = <&zip_xy_transform (INPUT_TRANSFORM_X_INVERT | INPUT_TRANSFORM_Y_INVERT)>;
+    input-processors = 
+	    <&zip_xy_transform (INPUT_TRANSFORM_X_INVERT | INPUT_TRANSFORM_Y_INVERT)>,
+		<&mg>,
+		<&mouse_runtime_input_processor>,
+		<&scroll_runtime_input_processor>,
+		<&zip_scroll_snap>,
+            <&scroll_inertia_free>;
+};
+
+
+&scroll_runtime_input_processor {
+        x-codes = <INPUT_REL_X>;
+		y-codes = <INPUT_REL_Y>;
+		xy-to-scroll-enabled;
+		active-layers = <BIT(5)>;   /* ビットマスク: レイヤー5 (NUM-SCROLL) */
+		y-invert;
 };
 
 &size_s_transform {

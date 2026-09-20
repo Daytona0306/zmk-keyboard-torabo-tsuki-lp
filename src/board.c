@@ -237,7 +237,7 @@ static struct bt_conn_cb power_mgmt_bt_conn_callbacks = {
     .disconnected = power_mgmt_bt_conn_disconnected_cb,
 };
 
-static void mouse_input_callback(struct input_event *evt) {
+static void mouse_input_callback(struct input_event *evt, void *user_data) {
     reset_idle_timer();
 }
 
@@ -259,7 +259,13 @@ static int split_power_mgmt_init(void) {
     return 0;
 }
 
-INPUT_CALLBACK_DEFINE(DEVICE_DT_GET_OR_NULL(DT_NODELABEL(trackball)) , mouse_input_callback);
+/* Zephyr 4.1 で INPUT_CALLBACK_DEFINE が user_data 引数を取るようになり、
+ * コールバックの型も (evt, user_data) の2引数に変更された。
+ * NOTE: trackball ノードは本家のスニペット移行で pointing_device へ改名済みで、
+ *       この DT_NODELABEL(trackball) は解決しない。結果 DEVICE_DT_GET_OR_NULL が
+ *       NULL となり全入力デバイスが対象になる。v0.3 系からの既存の挙動なので
+ *       ここでは変更していない。 */
+INPUT_CALLBACK_DEFINE(DEVICE_DT_GET_OR_NULL(DT_NODELABEL(trackball)), mouse_input_callback, NULL);
 
 SYS_INIT(split_power_mgmt_init, APPLICATION, CONFIG_APPLICATION_INIT_PRIORITY);
 

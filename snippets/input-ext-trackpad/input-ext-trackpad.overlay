@@ -1,0 +1,97 @@
+/* ★未検証★ ngsyst/bmp_boost_extender_mini 経由の2個目のポインティングデバイス
+ *
+ * 純正の拡張 FFC ポート (P0.16/18/19/20) はトラックボール・トラックパッド・
+ * ハイレゾダイヤル・4方向スイッチで取り合いになる。Extender Mini は
+ * BMP Boost の「追加IOポート」を別の FFC で引き出す小基板 (17.8 x 14.5mm) で、
+ * こちらは別ピンなので同じ半分に2個目を載せられる。
+ *
+ * 想定: トラックボールを持っている側 (= いまなら右手 central) にパッドを増設し、
+ * ボールでカーソル、パッドでスクロールという分担にする。
+ *
+ * ── ピン (ngsyst の README の例より) ──
+ *   SDA   P0.17        SCL   P0.21
+ *   RDY   P0.31        電源  P0.24
+ *   I2C アドレス 0x56 (純正ポートのパッドと同じだが別バス)
+ *
+ * 同じ2本 (P0.17 / P0.21) に spi1 を張ればトラックボールを、
+ * GPIO のまま使えば EC11 ロータリーエンコーダを載せられる。
+ * その場合はこの overlay を複製して中身を差し替える。
+ *
+ * ── 未検証事項 ──
+ *  1. bmp_boost のボード定義が i2c1 を他で使っていないか
+ *  2. nRF52840 では TWIM1 と SPIM1 が同じペリフェラルなので併用不可。
+ *     ext-trackball 版を作るときは同時指定しないこと
+ *  3. 実物を持っていないので、向き (v-invert / h-invert) は未調整
+ *  4. 基板は組立済みでは売っていない。JLCPCB へガーバーを出すところから
+ *
+ * ── 使い方 ──
+ * build.yaml の central 側 snippet に input-ext-trackpad を足す。
+ * 例:
+ *   snippet: "studio-rpc-usb-uart split-central input-trackball input-listener \
+ *             input-scroll-inertia input-ext-trackpad"
+ * CI を無駄に赤くしないため、既定では build.yaml に入れていない。
+ */
+
+#include <zephyr/dt-bindings/gpio/gpio.h>
+#include <zephyr/dt-bindings/i2c/i2c.h>
+#include <zephyr/dt-bindings/gpio/nordic-nrf-gpio.h>
+
+&pinctrl {
+    i2c1_default: i2c1_default {
+        group1 {
+            psels = <NRF_PSEL(TWIM_SDA, 0, 17)>,
+                    <NRF_PSEL(TWIM_SCL, 0, 21)>;
+            bias-pull-up;
+        };
+    };
+
+    i2c1_sleep: i2c1_sleep {
+        group1 {
+            psels = <NRF_PSEL(TWIM_SDA, 0, 17)>,
+                    <NRF_PSEL(TWIM_SCL, 0, 21)>;
+            bias-pull-up;
+            low-power-enable;
+        };
+    };
+};
+
+&i2c1 {
+    status = "okay";
+    compatible = "nordic,nrf-twim";
+    pinctrl-0 = <&i2c1_default>;
+    pinctrl-1 = <&i2c1_sleep>;
+    pinctrl-names = "default", "sleep";
+    clock-frequency = <I2C_BITRATE_FAST>;
+    zephyr,concat-buf-size = <32>;
+
+    /* ノード名・ラベルを pointing_device にしないこと。
+     * 純正ポート側のトラックボール/パッドがそのラベルを使っている。 */
+    trackpad_ext: trackpad_ext@56 {
+        status = "okay";
+        compatible = "azoteq,iqs7211e";
+        reg = <0x56>;
+        irq-gpios = <&gpio0 31 GPIO_PULL_UP>;
+        power-gpios = <&gpio0 24 (GPIO_ACTIVE_HIGH | NRF_GPIO_DRIVE_H1)>;
+
+        /* 指の移動を INPUT_REL_WHEEL として報告する。
+         * ボールでカーソル / パッドでスクロールの分担ならこれ。
+         * カーソルとして使うなら削る。その場合は下のリスナーに
+         * zip_xy_transform などを足すこと。
+         * init-symbol は指定しない = ドライバ既定 (30/40mm 円形モジュール用)。
+         * 純正のミニパッドを挿すなら mini_trackpad_iqs7211e_init を指定する。 */
+        scroller-mode;
+    };
+};
+
+/ {
+    trackpad_ext_listener: trackpad_ext_listener {
+        compatible = "zmk,input-listener";
+        device = <&trackpad_ext>;
+        status = "okay";
+        /* scroller-mode なので WHEEL/HWHEEL が直接飛ぶ。
+         * X/Y 系のプロセッサは通しても素通りするだけなので付けていない。
+         * ドライバ内蔵の慣性 (CONFIG_IQS7211E_SCROLLER_INERTIA) が効く。
+         * mjmjm0101 の慣性プロセッサは &pointing_listener 側に入っており
+         * こちらには掛からない。 */
+    };
+};

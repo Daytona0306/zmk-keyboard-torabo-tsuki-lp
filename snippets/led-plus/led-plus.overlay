@@ -1,66 +1,69 @@
+/* BMP Boost LED Extender — 緑・黄・赤の3色LED
+ *
+ * 上流 sekigon-gonnoc/zmk-keyboard-torabo-tsuki-lp の snippets/led-plus を
+ * 移植したもの。上流との差分は末尾を参照。
+ *
+ * ── 配線 (bmp-boost-led-extender.kicad_sch / .kicad_pcb から確認) ──
+ *   P1.02 → ネット Y   黄
+ *   P1.10 → ネット YG  緑
+ *   P1.11 → ネット R   赤
+ * いずれも ACTIVE_LOW。GPIO が Low を出したときに点く。
+ * リセット直後の nRF の GPIO は入力 (ハイインピーダンス) なので、
+ * このファイルを入れないビルドでは消灯のままになる。
+ *
+ * ── 追加IOポートの残り ──
+ * コンスルーで挿さる9穴のうち、LED が使うのは上の3本 + GND。
+ * 残り5本 (P0.17 / P0.21 / P0.24 / P0.29 / P0.31) は基板上の FFC
+ * コネクタ (GT-F0501SR10-06S1101、0.5mm 6ピン) へ素通しされている。
+ * 回路図のネット名は SCLK / SDIO / CS / MOTION / POW で PMW3610 を
+ * 想定した命名だが、nRF52840 はペリフェラルを自由に割り当てられるので
+ * I2C としても使える。そちらは snippets/input-ext-trackpad が受け持つ。
+ * 本スニペットは LED だけを見る (上流は両方を1ファイルに入れている)。
+ *
+ * ── ★エイリアスがずれていること ──
+ * モジュールが見るのは led-red / led-green / led-blue の3つ。
+ * 実装されている色は 赤・黄・緑 なので、上流は次のように寄せている。
+ *
+ *   led-green = &led_yellow   "緑" を指定すると 黄 が光る
+ *   led-blue  = &led_green    "青" を指定すると 緑 が光る
+ *
+ * モジュールの色番号は
+ *   BLACK=0 RED=1 GREEN=2 YELLOW=3 BLUE=4 MAGENTA=5 CYAN=6 WHITE=7
+ * なので、設定値を読むときは必ず上の対応を通すこと。
+ *
+ * ── 上流との差分 ──
+ * 1. 上流の `staus = "okay";` (status の誤字) を修正
+ * 2. i2c1 と trackpad_ext (コメントアウト済み) を持ち込んでいない。
+ *    snippets/input-ext-trackpad と二重定義になるため
+ * 3. .conf の CONFIG_IQS7211E=n を入れていない (理由は led-plus.conf)
+ */
+
+#include <zephyr/dt-bindings/gpio/gpio.h>
+
 / {
-  aliases {
-    led-red = &led_red;
-    led-green = &led_yellow;
-    led-blue = &led_green;
-  };
-
-  leds {
-    compatible = "gpio-leds";
-    staus = "okay";
-    led_red: led_red {
-        gpios = <&gpio1 11 GPIO_ACTIVE_LOW>;
+    aliases {
+        led-red   = &led_red;      /* P1.11 → 赤 */
+        led-green = &led_yellow;   /* P1.02 → 黄 (★"緑"だが黄が光る) */
+        led-blue  = &led_green;    /* P1.10 → 緑 (★"青"だが緑が光る) */
     };
-    led_yellow: led_yellow {
-        gpios = <&gpio1 2 GPIO_ACTIVE_LOW>;
-    };
-    led_green: led_green {
-        gpios = <&gpio1 10 GPIO_ACTIVE_LOW>;
-    };
-  };
 
-//   input_ext_listener: input_ext_listener {
-//     compatible = "zmk,input-listener";
-//     device = <&trackpad_ext>;
-//   };
-};
+    /* ★このノードはシールド側とマージされる。
+     * torabo_tsuki_lp.dtsi が同じ `/leds` (compatible = "gpio-leds") を持ち、
+     * 中に status_led (&bmp 2) を1個定義している。compatible が同じなので
+     * 衝突せず、子が4個になるだけ。status-led / rgbled-widget どちらも
+     * phandle 参照なので、子の並び順には依存しない。 */
+    leds {
+        compatible = "gpio-leds";
+        status = "okay";
 
-&pinctrl {
-    i2c1_default: i2c1_default {
-        group1 {
-            psels = <NRF_PSEL(TWIM_SDA, 0, 17)>,
-                    <NRF_PSEL(TWIM_SCL, 0, 21)>;
-            bias-pull-up;
+        led_red: led_red {
+            gpios = <&gpio1 11 GPIO_ACTIVE_LOW>;
+        };
+        led_yellow: led_yellow {
+            gpios = <&gpio1 2 GPIO_ACTIVE_LOW>;
+        };
+        led_green: led_green {
+            gpios = <&gpio1 10 GPIO_ACTIVE_LOW>;
         };
     };
-    i2c1_sleep: i2c1_sleep {
-        group1 {
-            psels = <NRF_PSEL(TWIM_SDA, 0, 17)>,
-                    <NRF_PSEL(TWIM_SCL, 0, 21)>;
-            bias-pull-up;
-            low-power-enable;
-        };
-    };
-};
-
-&i2c1 {
-    status = "okay";
-    compatible = "nordic,nrf-twim";
-    pinctrl-0 = <&i2c1_default>;
-    pinctrl-1 = <&i2c1_sleep>;
-    pinctrl-names = "default", "sleep";
-    clock-frequency = <I2C_BITRATE_FAST>;
-    zephyr,concat-buf-size = <32>;
-
-    // trackpad_ext: trackpad_ext@56 {
-    //     status = "disabled";
-    //     compatible = "azoteq,iqs7211e";
-    //     reg = <0x56>;
-    //     irq-gpios = <&gpio0 31 GPIO_PULL_UP>;
-    //     power-gpios = <&gpio0 24 (GPIO_ACTIVE_HIGH | NRF_GPIO_DRIVE_H1)>;
-    //     init-symbol = "mini_trackpad_iqs7211e_init";
-    //     init-length = <217>;
-    //     scroller-mode;
-    //     h-invert;
-    // };
 };

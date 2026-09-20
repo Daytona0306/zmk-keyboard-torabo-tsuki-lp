@@ -1,41 +1,72 @@
-#include "kscan-4-direction-switch-layouts.dtsi"
+/* 4方向スイッチモジュール (のぎけす屋 / zmk-driver-kscan-4-direction-switch)
+ *
+ * ★左手側専用★
+ *
+ * 右手側では使えない。オフセットが二重に掛かるため。
+ *   - kscan-composite は子 kscan の報告に column_offset を足す
+ *     (app/module/drivers/kscan/kscan_composite.c:113)
+ *   - そのあと matrix-transform が自分の col-offset を足す
+ *     (app/src/matrix_transform.c:78)
+ * 右手側の変換は torabo_tsuki_lp_right.overlay で col-offset = <7> を
+ * 持っているので、composite 側でも 7 を足すと 14..20 になって範囲外に落ちる。
+ * 逆に composite 側を 0 にすると、今度はスイッチの列まで +7 されて
+ * RC(5,7..11) を見に行くが、変換の map にあるのは RC(5,0..4) なので合わない。
+ *
+ * 左手側なら両方のオフセットが 0 なのでそのまま通る。
+ * 右手側に付けたくなったら変換の map を RC(5,7..11) 側へ動かすこと。
+ *
+ * ピンは拡張 FFC ポートそのもの (P0.16 / P0.18 / P0.19 / P0.20)。
+ * トラックボール・トラックパッド・ハイレゾダイヤルと同じ穴なので、
+ * 同じ半分にこれらは同居できない。
+ */
+
+#if defined(TORABO_TSUKI_LP_RIGHT)
+#error "kscan-4-direction-switch は左手側専用です。overlay 冒頭のコメント参照。"
+#endif
 
 /{
     chosen {
-        zmk,physical-layout = &physical_layout_l_4_direction;
-        zmk,kscan = &kscan2;
-        zmk,battery = &non_lipo_battery;
+        zmk,kscan = &kscan_4_direction_switch_composite;
     };
-  
-    kscan1: kscan1 {
+
+    kscan_4_direction_switch: kscan_4_direction_switch {
         compatible = "zmk,kscan-4-direction-switch";
 
         up-gpios = <&gpio0 19 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
         down-gpios = <&gpio0 18 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
         left-gpios = <&gpio0 19 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>,
-                      <&gpio0 18 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+                     <&gpio0 18 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
         right-gpios = <&gpio0 16 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
         push-gpios = <&gpio0 20 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
 
         wakeup-source;
     };
 
-    kscan2: kscan2 {
-        compatible = "zmk,kscan-composite";    
+    kscan_4_direction_switch_composite: kscan_4_direction_switch_composite {
+        compatible = "zmk,kscan-composite";
         rows = <6>;
         columns = <7>;
 
+        /* col-offset は書かない (既定 0)。左手側なので変換側も 0。 */
         matrix {
             kscan = <&kscan0>;
-#if defined(TORABO_TSUKI_LP_RIGHT)
-            col-offset = <7>;
-#endif
         };
 
         4-direction {
-            kscan = <&kscan1>;
+            kscan = <&kscan_4_direction_switch>;
             row-offset = <5>;
         };
     };
 };
 
+&physical_layout_s {
+    kscan = <&kscan_4_direction_switch_composite>;
+};
+
+&physical_layout_m {
+    kscan = <&kscan_4_direction_switch_composite>;
+};
+
+&physical_layout_l {
+    kscan = <&kscan_4_direction_switch_composite>;
+};

@@ -1,0 +1,7 @@
+/* 慣性スクロールは central 側でのみ動作する (ZMK のマウス HID API が
+ * central でしかコンパイルされないため)。右手側 central のビルドでのみ
+ * この snippet を指定して有効化する。 */
+
+&scroll_inertia_free {
+    status = "okay";
+};

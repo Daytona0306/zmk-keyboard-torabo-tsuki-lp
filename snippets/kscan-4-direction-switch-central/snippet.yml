@@ -1,0 +1,10 @@
+# 4方向スイッチが「反対側」に付いているときに central 側へ指定する。
+#
+# ZMK は左右それぞれが自分のマトリクス変換を適用して position を出し、
+# peripheral はその position を split で送る (app/src/physical_layouts.c)。
+# つまり両半分の変換が同じ形でないと位置がずれる。
+# このスニペットは kscan を差し替えず、変換とキーマップを1行伸ばす
+# CPP フラグだけを立てる。
+name: kscan-4-direction-switch-central
+append:
+  DTS_EXTRA_CPPFLAGS: -DTORABO_TSUKI_LP_KSCAN_4_DIRECTION_SWITCH

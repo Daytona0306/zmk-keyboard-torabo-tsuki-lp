@@ -16,6 +16,14 @@
         power-gpios = <&gpio0 8 (GPIO_ACTIVE_HIGH | NRF_GPIO_DRIVE_H1)>;
         init-symbol = "mini_trackpad_iqs7211e_init";
         init-length = <217>;
+
+        /* これが input-trackpad との唯一の違い。
+         * 指の移動を X/Y ではなく INPUT_REL_WHEEL として報告する
+         * (タップのクリックはそのまま残る)。
+         * 純正オプションの「ミニトラックパッド」は高分解能スクロール用なので
+         * こちらが正しい。カーソルとして使いたいなら input-trackpad を指定する。
+         *
+         * 向きが逆なら v-invert / h-invert を足す (どちらも boolean)。 */
         scroller-mode;
     };
 };
