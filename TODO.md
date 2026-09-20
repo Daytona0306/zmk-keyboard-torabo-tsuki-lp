@@ -400,13 +400,58 @@ LED の位置（`bmp-boost-led-extender.kicad_pcb` から実測）:
 1. 回転方向（逆なら DT に `invert`）
 2. `counts-per-revolution`（1回転でちょうど1周するか）
 3. `sleep1-enable` / `sleep2-enable` で回し始めを取りこぼさないか
-4. **Radial Controller は HID が変わる。** `CONFIG_ZMK_HIRES_DIAL_RADIAL_CONTROLLER`
-   は USB で HID インタフェースを1本増やし、BLE でもレポートマップが変わるので、
-   **ペアリング済みホストは再ペアリングが要る場合がある**とドライバ README にある。
-   接続が変になったら真っ先にここを疑うこと
-5. レイヤー割り当て（`config/keymap.keymap`）
+4. レイヤー割り当て（`config/keymap.keymap`）
    — 0 縦スクロール / 2 音量 / 4 横スクロール / 5 Radial Controller。
    押し込みは 0 でミドルクリック、5 で Surface Dial のボタン
+
+#### ★Radial Controller は現状ビルドできない — ドライバが ZMK v0.3 向け
+
+`CONFIG_ZMK_HIRES_DIAL_RADIAL_CONTROLLER=y` にすると落ちる。
+
+```
+zmk-driver-hires-dial/src/radial_controller/endpoints.c:12:45: error: invalid initializer
+```
+
+ドライバは
+
+```c
+struct zmk_endpoint_instance endpoint = zmk_endpoints_selected();
+```
+
+を呼ぶが、この関数は **ZMK 本家の `#3140`（Joel Spadin, 2026-02-12,
+"feat(endpoints): add \"no endpoint\" value"）で
+`zmk_endpoint_get_selected()` に改名されている。**
+宣言が無いので暗黙宣言 = `int` 扱いになり、構造体の初期化子として弾かれる。
+
+**cormoran さんのフォーク固有の問題ではない。** 上流 torabo の
+`feat/input-hires-dial` ブランチは `west.yml` で ZMK を `v0.3` に固定して
+おり、ドライバはその API に書かれている。こちらは ZMK main 系（`#3140`
+以降）なので合わない。
+
+**ずれているのはこの1シンボルだけ。** ドライバが呼ぶ ZMK の関数は
+これだけで、残りはドライバ自身のもの。`switch` には `default:` があるので
+`#3140` が足した `ZMK_TRANSPORT_NONE` も問題にならない。直すなら:
+
+```diff
+-    struct zmk_endpoint_instance endpoint = zmk_endpoints_selected();
++    struct zmk_endpoint_instance endpoint = zmk_endpoint_get_selected();
+```
+
+選択肢は2つ。**どちらを取るかは未決。**
+
+1. `zmk-driver-hires-dial` を fork して上の1行を直し、`config/west.yml` の
+   remote をそちらへ向ける。すぐ動くが fork を持つことになる
+2. 本家へ PR を出して取り込まれるのを待つ。ZMK main 系への追随という
+   筋の良い修正なので通りそうだが、待ちが読めない
+
+それまではエンコーダとホイールとしては動く。behavior 側に
+`behavior_hires_dial_radial_controller.c:57` と
+`..._button.c:16` の `#if` ガードがあるので、DT もキーマップもそのままで
+入力を捨てるだけの no-op になる。
+
+有効にできたときの注意: USB では HID インタフェースが1本増え
+（`USB_HID_DEVICE_COUNT` が 2 になる）、BLE ではレポートマップが変わるため、
+**ペアリング済みホストは再ペアリングが要る場合がある**とドライバ README にある。
 
 ### 1-e. パッドの直径が未確認
 
