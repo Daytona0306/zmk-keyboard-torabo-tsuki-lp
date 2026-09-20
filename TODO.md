@@ -437,12 +437,43 @@ struct zmk_endpoint_instance endpoint = zmk_endpoints_selected();
 +    struct zmk_endpoint_instance endpoint = zmk_endpoint_get_selected();
 ```
 
-選択肢は2つ。**どちらを取るかは未決。**
+**方針は「fork して直す」で決まり。** 本家への PR は筋が悪い —
+せきごんさんは `west.yml` で ZMK を `v0.3` に固定しており、あちらでは
+古い名前が正しい。単純に書き換える PR は**向こうのビルドを壊す**。
+取り込んでもらうには `#if` の両対応にする必要があり、しかも
+せきごんさんが v0.4 へ移った時点で不要になる分岐を増やすだけになる。
+向こうが v0.4 に移ればこの問題は自然に消えるので、それまでの繋ぎとする。
 
-1. `zmk-driver-hires-dial` を fork して上の1行を直し、`config/west.yml` の
-   remote をそちらへ向ける。すぐ動くが fork を持つことになる
-2. 本家へ PR を出して取り込まれるのを待つ。ZMK main 系への追随という
-   筋の良い修正なので通りそうだが、待ちが読めない
+### ★残作業: fork を作る（手作業が1回だけ要る）
+
+このセッションからは fork を作れなかった。GitHub App の権限で
+`POST /user/repos` が 403、owner をまたぐ add_repo も v1 では非対応。
+**ブラウザで1回 Fork を押す必要がある。**
+
+1. https://github.com/sekigon-gonnoc/zmk-driver-hires-dial → **Fork**
+   - 名前は `zmk-driver-hires-dial` のまま（`west.yml` の `name:` を変えずに済む）
+   - ★**public にすること。** CI の `west update` は匿名 clone なので、
+     private だと取ってこれない
+2. fork に `tools/hires-dial-zmk-main.patch` を当てる（`git am` で通る形）
+3. `config/west.yml` を差し替える
+
+```yaml
+  remotes:
++   - name: Daytona0306
++     url-base: https://github.com/Daytona0306
+
+    - name: zmk-driver-hires-dial
+-     remote: sekigon-gonnoc
+-     revision: 353a21964a2f6df1de128ca6e71ec63518729ab7  # track: main
++     remote: Daytona0306
++     revision: <パッチを当てたコミットの SHA>
+```
+
+4. `snippets/input-hires-dial-central/input-hires-dial-central.conf` の
+   `CONFIG_ZMK_HIRES_DIAL_RADIAL_CONTROLLER=y` を戻す
+5. CI が緑なら `main` へ
+
+上流が v0.4 に移ったら fork を捨てて `remote:` を `sekigon-gonnoc` に戻す。
 
 それまではエンコーダとホイールとしては動く。behavior 側に
 `behavior_hires_dial_radial_controller.c:57` と

@@ -1,0 +1,39 @@
+From ddc17603694a63003890e45f23a6b2e965bffcf6 Mon Sep 17 00:00:00 2001
+From: Daytona0306 <y.o.19910306@gmail.com>
+Date: Sun, 20 Sep 2026 23:50:22 +0000
+Subject: [PATCH] Follow the ZMK endpoints rename from #3140
+
+zmk_endpoints_selected() was renamed to zmk_endpoint_get_selected() in
+zmkfirmware/zmk#3140 ("feat(endpoints): add \"no endpoint\" value",
+2026-02-12). Building against ZMK main therefore fails:
+
+  src/radial_controller/endpoints.c:12:45: error: invalid initializer
+
+The old name is gone, so the call is implicitly declared as returning
+int, which cannot initialise a struct zmk_endpoint_instance.
+
+Upstream torabo-tsuki-lp pins ZMK to v0.3, where the old name is still
+correct -- this patch is only needed when building against ZMK main.
+Signature and semantics are identical, and the switch already has a
+default: arm, so ZMK_TRANSPORT_NONE (added by the same PR) needs no
+handling.
+---
+ src/radial_controller/endpoints.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/radial_controller/endpoints.c b/src/radial_controller/endpoints.c
+index 96b979a..cd6e20b 100644
+--- a/src/radial_controller/endpoints.c
++++ b/src/radial_controller/endpoints.c
+@@ -9,7 +9,7 @@
+ #include <zmk/hires_dial/radial_controller.h>
+ 
+ int zmk_hires_dial_radial_controller_endpoints_send(void) {
+-    struct zmk_endpoint_instance endpoint = zmk_endpoints_selected();
++    struct zmk_endpoint_instance endpoint = zmk_endpoint_get_selected();
+ 
+     switch (endpoint.transport) {
+ #if IS_ENABLED(CONFIG_ZMK_USB)
+-- 
+2.43.0
+
