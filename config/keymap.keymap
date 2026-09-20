@@ -200,8 +200,18 @@
 /* 4方向スイッチ: 上 下 左 右 押し込み (snippets/kscan-4-direction-switch)。
  * スニペットを指定しないビルドではこの5個は存在しない。 */
 &msc SCRL_UP  &msc SCRL_DOWN  &msc SCRL_LEFT  &msc SCRL_RIGHT  &mkp MCLK
+#elif defined(TORABO_TSUKI_LP_INPUT_HIRES_DIAL)
+/* ダイヤル押し込み = ホイールクリック。 */
+&mkp MCLK
 #endif
 >;
+#if defined(TORABO_TSUKI_LP_INPUT_HIRES_DIAL)
+            /* 既定は高分解能の縦スクロール。1入力カウント = WHEEL 値1。
+             * 速すぎるなら <4 1> (1/4) のように第1引数を上げる。
+             * ここだけは必ず置くこと — レイヤー0は常時 ON なので、
+             * sensor-bindings を書いていないレイヤーはここへ落ちてくる。 */
+            sensor-bindings = <&hires_dial_scroll 1 1>;
+#endif
         };
 
         /* index 1: iPad / iOS 用ベースレイヤー。
@@ -235,6 +245,9 @@
 &trans  &trans      &kp LCTRL   &trans  &mt LEFT_SHIFT LANG2  &trans  &mt LEFT_GUI BACKSPACE  &trans  &trans  &trans  &trans  &trans  &mt RIGHT_SHIFT LANG1  &trans
 #if defined(TORABO_TSUKI_LP_KSCAN_4_DIRECTION_SWITCH)
 &trans  &trans  &trans  &trans  &trans
+#elif defined(TORABO_TSUKI_LP_INPUT_HIRES_DIAL)
+/* ダイヤル押し込み。下のレイヤー0に落とす。 */
+&trans
 #endif
 >;
         };
@@ -249,8 +262,15 @@
 &trans  &trans                    &trans                    &trans           &mt LEFT_SHIFT LANGUAGE_1  &kp LG(LS(V))            &trans         &trans  &trans         &trans                &trans             &trans                &to 4           &trans
 #if defined(TORABO_TSUKI_LP_KSCAN_4_DIRECTION_SWITCH)
 &trans  &trans  &trans  &trans  &trans
+#elif defined(TORABO_TSUKI_LP_INPUT_HIRES_DIAL)
+&trans
 #endif
 >;
+#if defined(TORABO_TSUKI_LP_INPUT_HIRES_DIAL)
+            /* 数字/記号レイヤーでは音量。エンコーダ扱いになり、
+             * triggers-per-rotation (=20) ごとに1回キーが飛ぶ。 */
+            sensor-bindings = <&hires_dial_encoder C_VOL_UP C_VOL_DN>;
+#endif
         };
 
         SYM2 {
@@ -263,6 +283,8 @@
 &trans  &trans             &trans              &trans            &mt LEFT_SHIFT LANGUAGE_2  &trans                   &trans         &trans  &trans                  &trans                   &trans                 &trans                      &kp LC(LG(F4))               &trans
 #if defined(TORABO_TSUKI_LP_KSCAN_4_DIRECTION_SWITCH)
 &trans  &trans  &trans  &trans  &trans
+#elif defined(TORABO_TSUKI_LP_INPUT_HIRES_DIAL)
+&trans
 #endif
 >;
         };
@@ -277,8 +299,14 @@
 &trans  &kp DOT     &kp COMMA     &kp LEFT_BRACKET  &trans        &trans        &trans  &trans  &trans      &trans        &trans           &to 0     &to 0     &trans
 #if defined(TORABO_TSUKI_LP_KSCAN_4_DIRECTION_SWITCH)
 &trans  &trans  &trans  &trans  &trans
+#elif defined(TORABO_TSUKI_LP_INPUT_HIRES_DIAL)
+&trans
 #endif
 >;
+#if defined(TORABO_TSUKI_LP_INPUT_HIRES_DIAL)
+            /* マウスレイヤーでは横スクロール。 */
+            sensor-bindings = <&hires_dial_hscroll 1 1>;
+#endif
         };
 
         NUM-SCROLL {
@@ -291,8 +319,18 @@
 &trans  &trans      &trans            &trans            &trans            &trans  &trans  &trans  &kp DOT             &trans        &trans        &trans        &kp KP_PLUS      &trans
 #if defined(TORABO_TSUKI_LP_KSCAN_4_DIRECTION_SWITCH)
 &trans  &trans  &trans  &trans  &trans
+#elif defined(TORABO_TSUKI_LP_INPUT_HIRES_DIAL)
+/* このレイヤーはダイヤルが Radial Controller なので、押し込みも
+ * Surface Dial のボタン (メニュー開閉) として送る。 */
+&hires_dial_radial_controller_button
 #endif
 >;
+#if defined(TORABO_TSUKI_LP_INPUT_HIRES_DIAL)
+            /* Windows の Radial Controller (Surface Dial)。
+             * <4 1> は物理回転を 1/4 に縮めて送る。
+             * Windows 以外では何も起きない。 */
+            sensor-bindings = <&hires_dial_radial_controller 4 1>;
+#endif
         };
 
         bluetooth {
@@ -305,6 +343,8 @@
 &trans  &bt BT_DISC 5  &bt BT_DISC 6  &trans         &trans          &trans         &bt BT_CLR    &trans  &trans  &trans  &trans  &trans  &bt BT_CLR_ALL  &trans
 #if defined(TORABO_TSUKI_LP_KSCAN_4_DIRECTION_SWITCH)
 &trans  &trans  &trans  &trans  &trans
+#elif defined(TORABO_TSUKI_LP_INPUT_HIRES_DIAL)
+&trans
 #endif
 >;
         };
@@ -319,6 +359,8 @@
 &trans  &trans   &trans  &trans   &trans   &trans   &trans  &trans  &trans         &trans          &trans          &trans           &trans             &trans
 #if defined(TORABO_TSUKI_LP_KSCAN_4_DIRECTION_SWITCH)
 &trans  &trans  &trans  &trans  &trans
+#elif defined(TORABO_TSUKI_LP_INPUT_HIRES_DIAL)
+&trans
 #endif
 >;
         };
@@ -333,6 +375,8 @@
 &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
 #if defined(TORABO_TSUKI_LP_KSCAN_4_DIRECTION_SWITCH)
 &trans  &trans  &trans  &trans  &trans
+#elif defined(TORABO_TSUKI_LP_INPUT_HIRES_DIAL)
+&trans
 #endif
 >;
         };
@@ -347,6 +391,8 @@
 &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
 #if defined(TORABO_TSUKI_LP_KSCAN_4_DIRECTION_SWITCH)
 &trans  &trans  &trans  &trans  &trans
+#elif defined(TORABO_TSUKI_LP_INPUT_HIRES_DIAL)
+&trans
 #endif
 >;
         };
@@ -361,6 +407,8 @@
 &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
 #if defined(TORABO_TSUKI_LP_KSCAN_4_DIRECTION_SWITCH)
 &trans  &trans  &trans  &trans  &trans
+#elif defined(TORABO_TSUKI_LP_INPUT_HIRES_DIAL)
+&trans
 #endif
 >;
         };
@@ -375,6 +423,8 @@
 &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
 #if defined(TORABO_TSUKI_LP_KSCAN_4_DIRECTION_SWITCH)
 &trans  &trans  &trans  &trans  &trans
+#elif defined(TORABO_TSUKI_LP_INPUT_HIRES_DIAL)
+&trans
 #endif
 >;
         };
@@ -389,6 +439,8 @@
 &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
 #if defined(TORABO_TSUKI_LP_KSCAN_4_DIRECTION_SWITCH)
 &trans  &trans  &trans  &trans  &trans
+#elif defined(TORABO_TSUKI_LP_INPUT_HIRES_DIAL)
+&trans
 #endif
 >;
         };

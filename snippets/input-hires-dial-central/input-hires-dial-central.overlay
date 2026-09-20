@@ -1,0 +1,73 @@
+/* ダイヤルが「反対側」に付いているときに central 側へ指定する。
+ *
+ * ── なぜ central にもノードが要るのか ─────────────────────────
+ * ZMK のキーマップセンサーは split を跨ぐとき、値そのものではなく
+ * 「sensor_index + チャンネルデータ」で飛ぶ。
+ *
+ *   peripheral: app/src/sensors.c がセンサーを読む
+ *               → zmk_sensor_event
+ *               → app/src/split/bluetooth/service.c の send_sensor_state
+ *   central:    app/src/split/bluetooth/central.c が受けて zmk_sensor_event
+ *               → app/src/keymap.c の zmk_keymap_sensor_event
+ *               → zmk_sensor_keymap[layer][sensor_index] の behavior
+ *
+ * central 側の zmk_sensor_keymap は ZMK_KEYMAP_SENSORS_LEN で寸法が
+ * 決まるので、central にも同じ index に「何か」が並んでいないと
+ * レイヤーごとの sensor-bindings がそもそもコンパイルされない。
+ * かといって本物の sekigon,hires-dial を書くと I2C を叩きに行ってしまう。
+ *
+ * そのためドライバ側に、何もしないダミーのセンサーが用意されている。
+ *   sekigon,remote-hires-dial (src/remote_hires_dial_sensor.c)
+ * sample_fetch / channel_get は -ENOTSUP を返すだけで、trigger_set は
+ * 黙って 0 を返す。app/src/sensors.c が初期化時にトリガを張っても
+ * 何も起きない。実際の値はすべて split 経由で入ってくる。
+ *
+ * ── counts-per-revolution ───────────────────────────────────
+ * ダミー側にも required で付いている。scroll / radial controller の
+ * behavior が「1カウントが1回転の何分の1か」を
+ *   DT_PROP(DT_INST_PHANDLE(n, sensor), counts_per_revolution)
+ * でコンパイル時に取るため。★モジュールが付いている側の値と必ず揃える★
+ * (snippets/input-hires-dial/input-hires-dial.overlay)。
+ *
+ * ── キー位置 ─────────────────────────────────────────────────
+ * 押し込み (PUSH) は素の GPIO なのでキーマトリクス側に1個増える。
+ * kscan は差し替えないが、変換とキーマップは両半分で同じ形にする
+ * 必要があるため、CPP フラグだけはこちらでも立てる
+ * (snippet.yml の DTS_EXTRA_CPPFLAGS)。
+ */
+
+#if defined(TORABO_TSUKI_LP_INPUT_HIRES_DIAL_LOCAL)
+#error "input-hires-dial と input-hires-dial-central は同じビルドに指定できません。モジュールが載っている側が input-hires-dial、相方が input-hires-dial-central です。"
+#endif
+
+#include <behaviors/hires_dial.dtsi>
+
+/ {
+    /* ダミーのセンサー。I2C にも GPIO にも触らない。 */
+    remote_hires_dial: remote_hires_dial {
+        compatible = "sekigon,remote-hires-dial";
+        counts-per-revolution = <1500>;  /* ★ input-hires-dial 側と揃えること */
+    };
+
+    keymap_sensors: sensors {
+        compatible = "zmk,keymap-sensors";
+        sensors = <&remote_hires_dial>;
+        triggers-per-rotation = <20>;    /* ★ こちらも揃えること */
+    };
+};
+
+&hires_dial_encoder {
+    sensor = <&remote_hires_dial>;
+};
+
+&hires_dial_scroll {
+    sensor = <&remote_hires_dial>;
+};
+
+&hires_dial_hscroll {
+    sensor = <&remote_hires_dial>;
+};
+
+&hires_dial_radial_controller {
+    sensor = <&remote_hires_dial>;
+};

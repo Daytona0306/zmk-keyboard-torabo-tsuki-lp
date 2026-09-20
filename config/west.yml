@@ -52,6 +52,18 @@ manifest:
     - name: zmk-driver-iqs7211e
       remote: sekigon-gonnoc
       revision: 436d3c42172abf812ec104521f29384fc02fc50e  # track: master
+    # 高分解能ダイヤル (PAT912x, I2C 0x75)。snippets/input-hires-dial{,-central} が使う。
+    # CONFIG_ZMK_HIRES_DIAL は既定 n (menuconfig) で、CMakeLists も
+    # zephyr_library_sources_ifdef で囲われているため、スニペットを
+    # 指定しない限りビルドには一切入らない。
+    #
+    # ★このモジュールは dts_root: . を持つ。つまり
+    #   dts/behaviors/hires_dial.dtsi と dts/bindings/ が
+    #   west.yml に載っているだけで全ビルドのインクルードパスに乗る。
+    #   behaviors 側は /omit-if-no-ref/ なので参照しなければ消える。
+    - name: zmk-driver-hires-dial
+      remote: sekigon-gonnoc
+      revision: 353a21964a2f6df1de128ca6e71ec63518729ab7  # track: main
     - name: zmk-feature-cdc-acm-bootloader-trigger
       remote: sekigon-gonnoc
       revision: 37ca1ef9e42d62040387590542585da033d12571  # track: main

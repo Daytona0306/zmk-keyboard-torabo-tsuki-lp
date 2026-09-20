@@ -1,0 +1,22 @@
+/* 拡張基板のパッドの入力を split で相方へ転送する (送り側 = peripheral)。
+ *
+ * reg は split のパケットにそのまま載り、central 側は同じ reg を持つ
+ * zmk,input-split ノードを探して input_report する
+ * (app/src/pointing/input_split.c の zmk_input_split_report_peripheral_event)。
+ * 値で照合しているだけなので 0 から連番である必要はない。
+ *
+ * ★reg = <1> にしてあるのは、純正ポート側のデバイスを転送する
+ *  snippets/input-split が reg = <0> を使っているから。両方載せた
+ *  (純正ポートにボール + 拡張基板にパッド) ときに衝突しない。 */
+/{
+    split_inputs {
+        #address-cells = <1>;
+        #size-cells = <0>;
+
+        trackpad_ext_split: trackpad_ext_split@1 {
+            compatible = "zmk,input-split";
+            reg = <1>;
+            device = <&trackpad_ext>;
+        };
+    };
+};

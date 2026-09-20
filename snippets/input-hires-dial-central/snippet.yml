@@ -1,0 +1,8 @@
+# ダイヤルが「反対側」に付いているときに central 側へ指定する。
+# kscan は差し替えず、ダミーセンサーと behavior、そして変換/キーマップを
+# 1行伸ばす CPP フラグを足す。理由は overlay の冒頭コメント。
+name: input-hires-dial-central
+append:
+  EXTRA_DTC_OVERLAY_FILE: input-hires-dial-central.overlay
+  EXTRA_CONF_FILE: input-hires-dial-central.conf
+  DTS_EXTRA_CPPFLAGS: -DTORABO_TSUKI_LP_INPUT_HIRES_DIAL

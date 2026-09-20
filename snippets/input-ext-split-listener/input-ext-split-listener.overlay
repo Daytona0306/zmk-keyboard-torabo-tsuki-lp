@@ -1,0 +1,27 @@
+/* 拡張基板のパッドの入力を split で受ける (受け側 = central)。
+ * 送り側は input-ext-split。reg は送り側と必ず揃えること。
+ *
+ * device プロパティは書かない。central 側のノードは
+ * 「相方から来たイベントを流し込むための空の入力デバイス」であり、
+ * ここに実体を書くと peripheral 用のコードパス
+ * (BUILD_ASSERT で device を要求する側) と食い違う。 */
+/{
+    split_inputs {
+        #address-cells = <1>;
+        #size-cells = <0>;
+
+        trackpad_ext_split: trackpad_ext_split@1 {
+            compatible = "zmk,input-split";
+            reg = <1>;
+        };
+    };
+
+    trackpad_ext_split_listener: trackpad_ext_split_listener {
+        compatible = "zmk,input-listener";
+        device = <&trackpad_ext_split>;
+        status = "okay";
+        /* 送り側が scroller-mode なので WHEEL/HWHEEL がそのまま来る。
+         * カーソルとして使うよう送り側から scroller-mode を外したなら、
+         * ここに zip_xy_transform 等を足すこと。 */
+    };
+};

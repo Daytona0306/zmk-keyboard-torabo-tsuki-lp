@@ -1,33 +1,51 @@
 # ===========================================================================
 #  焼くもの
 #
-#      torabo_tsuki_lp_right_central   右手 = トラックボール + Studio + キーマップ + LED Extender
+#      torabo_tsuki_lp_right_central   右手 = トラックボール + Studio + キーマップ
 #      torabo_tsuki_lp_left_peripheral 左手 = キーのみ
 #      settings_reset                  設定消去
 #
+#  ★未実装ハード待ち (ビルド確認のみ。実機で焼いていない)
+#      ..._dial_pad_right_central      右手 = 上記 + ダイヤル受け + パッド受け
+#      ..._dial_pad_left_peripheral    左手 = キー + ダイヤル + 拡張基板のパッド
+#
 #  左右は必ず組で焼くこと。central 側が Studio・HID・キーマップを持つ。
+#  ★組を跨いで混ぜないこと★ ダイヤルを足すとマトリクス変換が1行伸びるので、
+#  片側だけ dial_pad 版にすると押した位置がずれる。
 #
 #  組み合わせを全部ビルドすると CI 時間を食うので、実際に使う構成だけに絞っている。
 #  スニペットは全部リポジトリに残してあるので、snippet 行の差し替えだけで戻せる。
 #
 #  ── LED Extender (led-plus) ─────────────────────────────────────────
-#  ★central 側にだけ付けること。LED の無い側で有効にすると
-#  led-red エイリアスが無くてビルドが落ちる。また表示内容の多く
-#  (相方の電池残量 / BLEプロファイル / レイヤー色) は central 専用。
+#  ★いまは使っていない★ 実機で3色とも点灯するところまでは確認できたが、
+#  電池カバーに隠れて見えないので外した。戻すときは central 側の snippet に
+#  led-plus を足すだけでよい。LED の無い側で有効にすると led-red エイリアスが
+#  無くてビルドが落ちる。また表示内容の多く (相方の電池残量 / BLEプロファイル /
+#  レイヤー色) は central 専用。
+#  ★注意★ led-plus は P0.24 (LED の共通アノード = 拡張基板の電源) を
+#  gpio-hog で High に固定する。拡張基板に何か挿すスニペット
+#  (input-ext-trackpad) は自前で power-gpios = <&gpio0 24 ...> を持っているので、
+#  led-plus を外しても電源は落ちない。
 #
-#  ── ★ミニトラックパッドが届いたら ───────────────────────────────────
-#  左右そろえて差し替えること。左のパッドは scroller-mode なので指の移動は
-#  X/Y ではなく INPUT_REL_WHEEL として飛び、input-split で右手 central へ転送される。
-#  受ける側が input-split-listener。
+#  ── 拡張モジュールをどこに挿すか ─────────────────────────────────────
+#  純正の拡張 FFC ポート (P0.16/18/19/20) は片側に1個しか無い。
+#  トラックボール / トラックパッド / ハイレゾダイヤル / 4方向スイッチは
+#  全部このポートを取り合うので、同じ半分に2個は付かない。
+#  2個目は拡張基板 (LED Extender / ngsyst の bmp_boost_extender_mini) の
+#  FFC 側 (P0.17/0.21/0.31/0.24) へ回す → input-ext-trackpad。
 #
+#  いまの割り当て:
+#      左 純正ポート (i2c0)       ハイレゾダイヤル
+#      左 拡張基板   (i2c1)       ミニトラックパッド
+#      右 純正ポート (spi0)       トラックボール
+#
+#  ── 他の構成 ─────────────────────────────────────────────────────────
+#  左にミニトラックパッド (拡張基板なし)
 #    left:  "studio-rpc-usb-uart input-trackpad-mini input-split"
 #    right: "studio-rpc-usb-uart split-central input-trackball input-listener \
 #            input-split-listener input-scroll-inertia"
-#
 #  カーソルとして使いたいなら左を input-trackpad に差し替える。
 #  向きが逆なら snippets/input-trackpad-mini/ の DT に v-invert / h-invert を足す。
-#
-#  ── 他の構成 ─────────────────────────────────────────────────────────
 #  両手にトラックボール
 #    left:  "studio-rpc-usb-uart input-trackball input-split"
 #    right: パッドのときと同じ (input-split-listener 入り)
@@ -38,28 +56,32 @@
 #  左右を入れ替える (左にボール + 右 peripheral)
 #    left:  "studio-rpc-usb-uart split-central input-trackball input-listener"
 #    right: "studio-rpc-usb-uart"
-#  拡張ポートをもう1個生やして片側に2デバイス ★未検証
-#    right の snippet に input-ext-trackpad を足す。
-#    BMP Boost の「追加IO」を FFC で引き出す小基板が要る。候補は2つあり、
-#    どちらも同じ4本 (SDA P0.17 / SCL P0.21 / RDY P0.31 / 電源 P0.24) を出す。
-#      - BMP Boost LED Extender (せきごんさん)  ← いま右手に付いているもの
-#      - ngsyst/bmp_boost_extender_mini
-#    LED Extender の LED は P1.02 / P1.10 / P1.11 なので led-plus とは衝突しない。
-#
-#  拡張モジュールは左右それぞれ1個まで。トラックボール / トラックパッド /
-#  ハイレゾダイヤル / 4方向スイッチは同じ FFC ポート (P0.16/18/19/20) を
-#  取り合うため、片側に2個は付かない。詳しくは README。
+#  central 側に拡張基板を付けて、そこにパッドを載せる
+#    right の snippet に "input-ext-trackpad input-ext-trackpad-listener" を足す。
 # ===========================================================================
 include:
   - board: bmp_boost
     shield: torabo_tsuki_lp_right
-    snippet: "studio-rpc-usb-uart split-central input-trackball input-listener input-scroll-inertia led-plus"
+    snippet: "studio-rpc-usb-uart split-central input-trackball input-listener input-scroll-inertia"
     artifact-name: torabo_tsuki_lp_right_central
 
   - board: bmp_boost
     shield: torabo_tsuki_lp_left
     snippet: studio-rpc-usb-uart
     artifact-name: torabo_tsuki_lp_left_peripheral
+
+  # ── ★ハード待ち: 左にダイヤル + 拡張基板のパッド ──────────────────
+  # 実機はまだ組んでいない。CI でビルドが通ることだけを確認している。
+  # 焼くときは必ずこの2つを組で焼くこと (マトリクス変換の行数が変わる)。
+  - board: bmp_boost
+    shield: torabo_tsuki_lp_left
+    snippet: "studio-rpc-usb-uart input-hires-dial input-ext-trackpad input-ext-split"
+    artifact-name: torabo_tsuki_lp_dial_pad_left_peripheral
+
+  - board: bmp_boost
+    shield: torabo_tsuki_lp_right
+    snippet: "studio-rpc-usb-uart split-central input-trackball input-listener input-scroll-inertia input-hires-dial-central input-ext-split-listener"
+    artifact-name: torabo_tsuki_lp_dial_pad_right_central
 
   - board: bmp_boost
     shield: settings_reset

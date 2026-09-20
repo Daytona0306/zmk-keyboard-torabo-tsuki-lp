@@ -1,0 +1,153 @@
+/* 高分解能ダイヤルモジュール (sekigon-gonnoc/hires-dial-module)
+ *
+ * ★モジュールが載っている側★ に指定する。相方 (central) 側には
+ * input-hires-dial-central を指定すること。
+ *
+ * ── 配線 ─────────────────────────────────────────────────────
+ * 0.5mm ピッチ 6ピン FPC。同一電極面のケーブルを使う場合、対向する側の
+ * コネクタでピン順が反転するので現物合わせで確認すること。
+ *
+ *   モジュール側      BMP Boost 拡張 FFC ポート
+ *   1 VCC(3.3V)  ──  P0.8   (power-gpios。トラックパッドと同じ)
+ *   2 MOTION     ──  P0.20  (割り込み。Low アサート)
+ *   3 PUSH       ──  P0.19  (押し込みで Low。下の kscan で拾う)
+ *   4 SCL        ──  P0.16  (i2c0。ホスト側プルアップ = pinctrl の bias-pull-up)
+ *   5 SDA        ──  P0.18  (i2c0)
+ *   6 GND        ──  GND
+ *
+ * P0.16/18/19/20 は拡張 FFC ポートそのもの。トラックボール・トラックパッド・
+ * 4方向スイッチと同じ穴なので、同じ半分にこれらは同居できない。
+ * 片側に2個載せたいときは、もう1個を拡張基板 (LED Extender /
+ * bmp_boost_extender_mini) の FFC 側へ回すこと → snippets/input-ext-trackpad。
+ *
+ * ── 押し込み (PUSH) ──────────────────────────────────────────
+ * PUSH は I2C ではなく素の GPIO なので、キーマトリクスに1個足して拾う。
+ * kscan-composite で row-offset = 5 に生やし、RC(5,0) に割り当てる。
+ * 4方向スイッチ (RC(5,0..4)) と同じ行を使うので両立しない。
+ * 変換とキーマップを1行伸ばすのは DTS_EXTRA_CPPFLAGS の
+ * -DTORABO_TSUKI_LP_INPUT_HIRES_DIAL。左右両方で定義する必要がある
+ * (両半分がそれぞれ自分の変換を適用してから position を split で送るため)。
+ *
+ * ★4方向スイッチと同じ理由で左手側向き★
+ * kscan-composite の col-offset と matrix-transform の col-offset が
+ * 二重に掛かるため、右手側 (col-offset = 7) では位置がずれる。
+ * 詳しくは snippets/kscan-4-direction-switch/ の冒頭コメント。
+ *
+ * ── カウント数 ───────────────────────────────────────────────
+ * counts-per-revolution は「1回転で溜まる Y カウント数」。
+ * モジュールの README は「1回転で約1500カウント」と書いている。
+ * ドライバ README の DT 例は 1275 なので、実機で回してみて
+ * 1回転がずれるようならここを調整する (大きくすると回転が鈍くなる)。
+ * triggers-per-rotation はエンコーダとして使うときのクリック数で、
+ * 1500 / 20 = 75 カウントごとに1回 behavior が走る。
+ *
+ * ── 未調整 ───────────────────────────────────────────────────
+ * sleep1-enable / sleep2-enable は入れていない。消費電流を下げる代わりに
+ * 回し始めの数カウントを取りこぼす可能性がある。電池の減りが気になったら
+ * まずここを試すこと。回転方向が逆なら invert を足す。
+ */
+
+#if defined(TORABO_TSUKI_LP_KSCAN_4_DIRECTION_SWITCH)
+#error "input-hires-dial と kscan-4-direction-switch は同じ FFC ポートと同じマトリクス行 RC(5,x) を取り合うため併用できません。"
+#endif
+
+#if defined(TORABO_TSUKI_LP_RIGHT)
+#error "input-hires-dial は左手側専用です。overlay 冒頭のコメント参照。右手側には input-hires-dial-central を指定してください。"
+#endif
+
+#include <zephyr/dt-bindings/gpio/gpio.h>
+#include <zephyr/dt-bindings/gpio/nordic-nrf-gpio.h>
+#include <zephyr/dt-bindings/i2c/i2c.h>
+#include <behaviors/hires_dial.dtsi>
+
+&i2c0 {
+    status = "okay";
+    compatible = "nordic,nrf-twim";
+    pinctrl-0 = <&i2c0_default>;
+    pinctrl-1 = <&i2c0_sleep>;
+    pinctrl-names = "default", "sleep";
+    clock-frequency = <I2C_BITRATE_FAST>;
+
+    hires_dial: hires_dial@75 {
+        status = "okay";
+        compatible = "sekigon,hires-dial";
+        reg = <0x75>;
+        res-cpi = <1275>;                /* 最大値 = ドライバ既定 */
+        counts-per-revolution = <1500>;  /* 上のコメント参照 */
+        motion-read-interval-ms = <8>;
+        motion-gpios = <&gpio0 20 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+        power-gpios = <&gpio0 8 (GPIO_ACTIVE_HIGH | NRF_GPIO_DRIVE_H0H1)>;
+    };
+};
+
+/ {
+    /* ZMK の「キーマップセンサー」。レイヤーごとの sensor-bindings は
+     * ここに並べた順 (= sensor_index) で引かれる。
+     * peripheral 側ではこのノードがあるだけでセンサーが読まれ、
+     * イベントが split で central へ飛ぶ (app/src/sensors.c →
+     * app/src/split/bluetooth/service.c の send_sensor_state)。
+     * keymap.c は central 側でしかコンパイルされないので、
+     * peripheral 側で sensor-bindings が実行されることはない。 */
+    keymap_sensors: sensors {
+        compatible = "zmk,keymap-sensors";
+        sensors = <&hires_dial>;
+        triggers-per-rotation = <20>;
+    };
+
+    /* PUSH (P0.19)。押し込みで Low。 */
+    hires_dial_push: hires_dial_push {
+        compatible = "zmk,kscan-gpio-direct";
+        input-gpios = <&gpio0 19 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+        wakeup-source;
+    };
+
+    hires_dial_composite: hires_dial_composite {
+        compatible = "zmk,kscan-composite";
+        rows = <6>;
+        columns = <7>;
+
+        /* col-offset は書かない (既定 0)。左手側なので変換側も 0。 */
+        matrix {
+            kscan = <&kscan0>;
+        };
+
+        push {
+            kscan = <&hires_dial_push>;
+            row-offset = <5>;
+        };
+    };
+
+    chosen {
+        zmk,kscan = &hires_dial_composite;
+    };
+};
+
+&physical_layout_s {
+    kscan = <&hires_dial_composite>;
+};
+
+&physical_layout_m {
+    kscan = <&hires_dial_composite>;
+};
+
+&physical_layout_l {
+    kscan = <&hires_dial_composite>;
+};
+
+/* behavior 側は counts-per-revolution をこの phandle から読む
+ * (コンパイル時に DT_PROP で取るだけで、実行時にセンサーは触らない)。 */
+&hires_dial_encoder {
+    sensor = <&hires_dial>;
+};
+
+&hires_dial_scroll {
+    sensor = <&hires_dial>;
+};
+
+&hires_dial_hscroll {
+    sensor = <&hires_dial>;
+};
+
+&hires_dial_radial_controller {
+    sensor = <&hires_dial>;
+};

@@ -1,3 +1,19 @@
+/* 「いま右手側をビルドしている」ことをスニペット側から見えるようにする。
+ *
+ * Kconfig の CONFIG_SHIELD_TORABO_TSUKI_LP_RIGHT は使えない。Zephyr は
+ * DTS を先に処理してから Kconfig を走らせるので、DTS のプリプロセス時に
+ * autoconf.h はまだ存在しない。
+ * 一方 overlay は「ボード → シールド → スニペット」の順に連結されて
+ * 1回だけ cpp に通るため、ここで #define しておけば後から足される
+ * スニペットの #if から見える。
+ *
+ * これを見ているのは左手側専用のスニペット:
+ *   snippets/kscan-4-direction-switch/
+ *   snippets/input-hires-dial/
+ * どちらも RC(5,x) を使うが、右手側は変換が col-offset = <7> を持つので
+ * kscan-composite の分と二重に掛かって位置がずれる。 */
+#define TORABO_TSUKI_LP_RIGHT
+
 #include "torabo_tsuki_lp.dtsi"
 #include <input/processors.dtsi>
 #include <dt-bindings/zmk/input_transform.h>

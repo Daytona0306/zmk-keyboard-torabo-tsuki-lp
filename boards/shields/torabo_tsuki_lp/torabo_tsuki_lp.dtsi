@@ -3,13 +3,27 @@
 #include <behaviors/battery_history_request.dtsi>
 #include "torabo_tsuki_lp_layouts.dtsi"
 
-/* TORABO_TSUKI_LP_KSCAN_4_DIRECTION_SWITCH が定義されていると、3つの
- * マトリクス変換が1行伸びて 4方向スイッチ用の RC(5,0..4) を持つ。
- * 定義するのは snippets/kscan-4-direction-switch{,-central}/ の
- * DTS_EXTRA_CPPFLAGS。スイッチを持つ側と、キーマップを持つ central 側の
- * 両方で定義する必要がある (両半分がそれぞれ自分の変換を適用してから
- * position を split で送るため — app/src/physical_layouts.c)。
- * config/keymap.keymap 側にも同じ #if でバインディングを足してある。 */
+/* 拡張モジュールの「余ったスイッチ」用に、3つのマトリクス変換を1行
+ * (row 5) 伸ばす仕掛け。どのモジュールを付けたかで幅が変わる。
+ *
+ *   TORABO_TSUKI_LP_KSCAN_4_DIRECTION_SWITCH  RC(5,0..4)  上/下/左/右/押し込み
+ *   TORABO_TSUKI_LP_INPUT_HIRES_DIAL          RC(5,0)     ダイヤルの押し込み
+ *
+ * 定義するのは snippets/kscan-4-direction-switch{,-central}/ と
+ * snippets/input-hires-dial{,-central}/ の DTS_EXTRA_CPPFLAGS。
+ * モジュールを持つ側と、キーマップを持つ central 側の両方で定義する必要が
+ * ある (両半分がそれぞれ自分の変換を適用してから position を split で送る
+ * ため — app/src/physical_layouts.c)。
+ * config/keymap.keymap 側にも同じ #if でバインディングを足してある。
+ *
+ * 2つは同じ row を取り合うので併用できない。スニペット側に #error がある。
+ *
+ * NOTE: torabo_tsuki_lp_layouts.dtsi の physical-layout (Studio の
+ *       ビジュアル編集用) はどちらの場合も伸ばしていない。ZMK は
+ *       「変換の位置数」と「physical-layout の keys の数」が一致すること
+ *       を要求しないので (app/src/physical_layouts.c に該当の
+ *       BUILD_ASSERT は無い) ビルドは通るが、増えた位置は Studio の
+ *       キーボード図には出てこない。上流の4方向スイッチ対応も同じ。 */
 
 / {
     chosen {
@@ -22,7 +36,7 @@
         compatible = "zmk,matrix-transform";
         columns = <14>;
         rows = <
-#if defined(TORABO_TSUKI_LP_KSCAN_4_DIRECTION_SWITCH)
+#if defined(TORABO_TSUKI_LP_KSCAN_4_DIRECTION_SWITCH) || defined(TORABO_TSUKI_LP_INPUT_HIRES_DIAL)
             6
 #else
             4
@@ -39,6 +53,11 @@
              * row-offset = 5 で生やす。左手側専用 — 理由は
              * snippets/kscan-4-direction-switch/ のコメント参照。 */
             RC(5,0) RC(5,1) RC(5,2) RC(5,3) RC(5,4)
+#elif defined(TORABO_TSUKI_LP_INPUT_HIRES_DIAL)
+            /* ハイレゾダイヤルの押し込み (FFC 3番 PUSH → P0.19)。
+             * こちらも kscan-composite が row-offset = 5 で生やす。
+             * 左手側専用 — snippets/input-hires-dial/ のコメント参照。 */
+            RC(5,0)
 #endif
         >;
     };
@@ -47,7 +66,7 @@
         compatible = "zmk,matrix-transform";
         columns = <14>;
         rows = <
-#if defined(TORABO_TSUKI_LP_KSCAN_4_DIRECTION_SWITCH)
+#if defined(TORABO_TSUKI_LP_KSCAN_4_DIRECTION_SWITCH) || defined(TORABO_TSUKI_LP_INPUT_HIRES_DIAL)
             6
 #else
             4
@@ -64,6 +83,11 @@
              * row-offset = 5 で生やす。左手側専用 — 理由は
              * snippets/kscan-4-direction-switch/ のコメント参照。 */
             RC(5,0) RC(5,1) RC(5,2) RC(5,3) RC(5,4)
+#elif defined(TORABO_TSUKI_LP_INPUT_HIRES_DIAL)
+            /* ハイレゾダイヤルの押し込み (FFC 3番 PUSH → P0.19)。
+             * こちらも kscan-composite が row-offset = 5 で生やす。
+             * 左手側専用 — snippets/input-hires-dial/ のコメント参照。 */
+            RC(5,0)
 #endif
         >;
     };
@@ -72,7 +96,7 @@
         compatible = "zmk,matrix-transform";
         columns = <14>;
         rows = <
-#if defined(TORABO_TSUKI_LP_KSCAN_4_DIRECTION_SWITCH)
+#if defined(TORABO_TSUKI_LP_KSCAN_4_DIRECTION_SWITCH) || defined(TORABO_TSUKI_LP_INPUT_HIRES_DIAL)
             6
 #else
             5
@@ -90,6 +114,11 @@
              * row-offset = 5 で生やす。左手側専用 — 理由は
              * snippets/kscan-4-direction-switch/ のコメント参照。 */
             RC(5,0) RC(5,1) RC(5,2) RC(5,3) RC(5,4)
+#elif defined(TORABO_TSUKI_LP_INPUT_HIRES_DIAL)
+            /* ハイレゾダイヤルの押し込み (FFC 3番 PUSH → P0.19)。
+             * こちらも kscan-composite が row-offset = 5 で生やす。
+             * 左手側専用 — snippets/input-hires-dial/ のコメント参照。 */
+            RC(5,0)
 #endif
         >;
     };

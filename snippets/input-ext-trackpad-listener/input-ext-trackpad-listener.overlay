@@ -1,0 +1,15 @@
+/* 拡張基板のパッドを「その場で」使うためのリスナー。
+ * central 側に拡張基板を付けたとき用。peripheral 側に付けたなら
+ * 代わりに input-ext-split / input-ext-split-listener を使うこと。 */
+/ {
+    trackpad_ext_listener: trackpad_ext_listener {
+        compatible = "zmk,input-listener";
+        device = <&trackpad_ext>;
+        status = "okay";
+        /* scroller-mode なので WHEEL/HWHEEL が直接飛ぶ。
+         * X/Y 系のプロセッサは通しても素通りするだけなので付けていない。
+         * ドライバ内蔵の慣性 (CONFIG_IQS7211E_SCROLLER_INERTIA) が効く。
+         * mjmjm0101 の慣性プロセッサは &pointing_listener 側に入っており
+         * こちらには掛からない。 */
+    };
+};

@@ -1,17 +1,29 @@
-/* ★未検証★ ngsyst/bmp_boost_extender_mini 経由の2個目のポインティングデバイス
+/* ★未検証★ 拡張基板の FFC に載せる2個目のポインティングデバイス
  *
  * 純正の拡張 FFC ポート (P0.16/18/19/20) はトラックボール・トラックパッド・
- * ハイレゾダイヤル・4方向スイッチで取り合いになる。Extender Mini は
- * BMP Boost の「追加IOポート」を別の FFC で引き出す小基板 (17.8 x 14.5mm) で、
- * こちらは別ピンなので同じ半分に2個目を載せられる。
+ * ハイレゾダイヤル・4方向スイッチで取り合いになる。BMP Boost の
+ * 「追加IOポート」を別の FFC で引き出す小基板を使うと、そちらは別ピンなので
+ * 同じ半分に2個目を載せられる。
+ *   - BMP Boost LED Extender (せきごんさん / キーフリ2026 配布品)
+ *   - ngsyst/bmp_boost_extender_mini  (17.8 x 14.5mm、JLCPCB へ発注するタイプ)
+ * どちらも同じ4本を出す。
  *
- * 想定: トラックボールを持っている側 (= いまなら右手 central) にパッドを増設し、
- * ボールでカーソル、パッドでスクロールという分担にする。
+ * ── いまの構成 ───────────────────────────────────────────────
+ *   左 純正ポート (i2c0)      ハイレゾダイヤル   → input-hires-dial
+ *   左 エクステンダー (i2c1)  ミニトラックパッド → このスニペット
+ *   右 純正ポート             トラックボール     → input-trackball
+ * 左は peripheral なので、このパッドの入力は zmk,input-split で central へ
+ * 転送する → input-ext-split (送り側) / input-ext-split-listener (受け側)。
+ * central 側に直付けするなら代わりに input-ext-trackpad-listener を使う。
  *
- * ── ピン (ngsyst の README の例より) ──
+ * ── ピン ─────────────────────────────────────────────────────
  *   SDA   P0.17        SCL   P0.21
  *   RDY   P0.31        電源  P0.24
  *   I2C アドレス 0x56 (純正ポートのパッドと同じだが別バス)
+ *
+ * ★P0.24 は LED Extender では3色LEDの共通アノードも兼ねている。
+ *  ここの power-gpios が High にすることで、LED 側にも電源が回る。
+ *  (LED を光らせるには別途 snippets/led-plus が要る。いまは使っていない。)
  *
  * 同じ2本 (P0.17 / P0.21) に spi1 を張ればトラックボールを、
  * GPIO のまま使えば EC11 ロータリーエンコーダを載せられる。
@@ -21,15 +33,8 @@
  *  1. bmp_boost のボード定義が i2c1 を他で使っていないか
  *  2. nRF52840 では TWIM1 と SPIM1 が同じペリフェラルなので併用不可。
  *     ext-trackball 版を作るときは同時指定しないこと
- *  3. 実物を持っていないので、向き (v-invert / h-invert) は未調整
- *  4. 基板は組立済みでは売っていない。JLCPCB へガーバーを出すところから
- *
- * ── 使い方 ──
- * build.yaml の central 側 snippet に input-ext-trackpad を足す。
- * 例:
- *   snippet: "studio-rpc-usb-uart split-central input-trackball input-listener \
- *             input-scroll-inertia input-ext-trackpad"
- * CI を無駄に赤くしないため、既定では build.yaml に入れていない。
+ *  3. 実物を繋いでいないので、向き (v-invert / h-invert) は未調整
+ *  4. 拡張基板と純正モジュールで FFC のピン「順」が合うかは現物合わせ
  */
 
 #include <zephyr/dt-bindings/gpio/gpio.h>
@@ -73,25 +78,17 @@
         irq-gpios = <&gpio0 31 GPIO_PULL_UP>;
         power-gpios = <&gpio0 24 (GPIO_ACTIVE_HIGH | NRF_GPIO_DRIVE_H1)>;
 
-        /* 指の移動を INPUT_REL_WHEEL として報告する。
-         * ボールでカーソル / パッドでスクロールの分担ならこれ。
-         * カーソルとして使うなら削る。その場合は下のリスナーに
-         * zip_xy_transform などを足すこと。
-         * init-symbol は指定しない = ドライバ既定 (30/40mm 円形モジュール用)。
-         * 純正のミニパッドを挿すなら mini_trackpad_iqs7211e_init を指定する。 */
-        scroller-mode;
-    };
-};
+        /* 純正の「ミニトラックパッド」を挿す前提。初期化テーブルは
+         * リポジトリ内の src/mini_trackpad_init_reg.c にある実体を指す
+         * (input-trackpad{,-mini} と同じもの)。
+         * 30/40mm の円形モジュールを挿すならこの2行を削る = ドライバ既定。 */
+        init-symbol = "mini_trackpad_iqs7211e_init";
+        init-length = <217>;
 
-/ {
-    trackpad_ext_listener: trackpad_ext_listener {
-        compatible = "zmk,input-listener";
-        device = <&trackpad_ext>;
-        status = "okay";
-        /* scroller-mode なので WHEEL/HWHEEL が直接飛ぶ。
-         * X/Y 系のプロセッサは通しても素通りするだけなので付けていない。
-         * ドライバ内蔵の慣性 (CONFIG_IQS7211E_SCROLLER_INERTIA) が効く。
-         * mjmjm0101 の慣性プロセッサは &pointing_listener 側に入っており
-         * こちらには掛からない。 */
+        /* 指の移動を X/Y ではなく INPUT_REL_WHEEL として報告する。
+         * ダイヤルで縦スクロール / パッドで面スクロールという分担ならこれ。
+         * カーソルとして使うならこの行を削り、受け側のリスナーに
+         * zip_xy_transform などを足すこと。 */
+        scroller-mode;
     };
 };
