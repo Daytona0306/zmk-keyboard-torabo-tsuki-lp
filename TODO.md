@@ -22,7 +22,7 @@ torabo-tsuki LP の拡張モジュールは3種類。のぎけす屋 (BOOTH) で
 |---|---|---|---|---|---|
 | トラックパッド（円形 30/40mm・ミニ） | — | `zmk-driver-iqs7211e` | ✅ | ✅ | ❌ |
 | 4方向スイッチモジュール | ¥2,300 | `zmk-driver-kscan-4-direction-switch` | ✅ | ✅ 移植済 | ❌ |
-| ハイレゾダイヤルモジュール | ¥2,500 | `zmk-driver-hires-dial` | ❌ 未追加 | ❌ | ❌ |
+| ハイレゾダイヤルモジュール | ¥2,500 | `zmk-driver-hires-dial` | ✅ | ✅ 自前 | ❌ |
 
 ### ★純正の拡張ポートには1デバイスしか載らない
 
@@ -41,30 +41,35 @@ torabo-tsuki LP の拡張モジュールは3種類。のぎけす屋 (BOOTH) で
 - **左右で分担**（純正。`input-split` で転送）→ build.yaml の C / D / E
 - **`ngsyst/bmp_boost_extender_mini`** で追加IOポートを引き出す → 1-c
 
-### 1-a. build.yaml は3ターゲットだけ
+### 1-a. build.yaml は5ターゲット
 
-実際に使う構成しか作らない。**右 central（ボール）+ 左 peripheral（キーのみ）+ settings_reset。**
+いま焼いているのは2つだけ。**右 central（ボール）+ 左 peripheral（キーのみ）。**
+それに `settings_reset` と、**まだ実機のない「左にダイヤル＋拡張基板のパッド」**の
+2つを足して5つ。後者は CI でビルドが通ることだけを見ている。
+
+```
+torabo_tsuki_lp_dial_pad_left_peripheral   左 = キー + ダイヤル + 拡張基板のパッド
+torabo_tsuki_lp_dial_pad_right_central     右 = ボール + ダイヤル受け + パッド受け
+```
+
+**★この2つは必ず組で焼くこと。** ダイヤルの押し込みでマトリクス変換が
+1行伸びるので、片側だけ差し替えると押した位置がずれる。
 
 スニペットは全部残してあるので、他の構成は `snippet` 行の差し替えだけで戻せる。
 書き方は `build.yaml` 冒頭のコメントと README「他の構成に戻したいとき」。
 
-**★トラックパッドが届いたら左右そろえて差し替えること。**
-
-```yaml
-left:  "studio-rpc-usb-uart input-trackpad-mini input-split"
-right: "studio-rpc-usb-uart split-central input-trackball input-listener
-        input-split-listener input-scroll-inertia"
-```
-
-左だけ変えても動かない（右が `input-split-listener` を持たないと受け取れない）。
 **届く前に焼かないこと** — 繋がっていない i2c デバイスをプローブし続ける。
 
 届いたあとの確認事項
 
-1. スクロールの向き。逆なら `snippets/input-trackpad-mini/` の DT に
-   `v-invert` / `h-invert` を足す（上流は `h-invert` を付けている）
-2. カーソルとして使いたくなったら左を `input-trackpad` に差し替える
+1. スクロールの向き。逆なら `snippets/input-ext-trackpad/` の DT に
+   `v-invert` / `h-invert` を足す（上流は純正ポート側に `h-invert` を付けている）
+2. カーソルとして使いたくなったら `scroller-mode` を外し、
+   受け側 `input-ext-split-listener` のリスナーに `zip_xy_transform` を足す
 3. パッドの直径（下記 1-e）
+4. ダイヤルの `counts-per-revolution`（下記 1-d）
+5. **FFC のピン「順」** — ダイヤルは 0.5mm 6ピン、同一電極面のケーブルだと
+   対向コネクタで順序が反転する。現物合わせで確認すること
 
 #### ★端の帯が横スクロールになる（既定で有効）
 
@@ -116,9 +121,25 @@ Y=0 がパッドのどちら側かは実装からは決まらないので、現�
 
 ### 1-c. 追加IOポート — LED Extender で埋まった
 
-**2026-09-20、キーフリで BMP Boost LED Extender を入手（無料配布）。右手に装着。**
+**2026-09-20、キーフリで BMP Boost LED Extender を入手（無料配布）。**
 Extender Mini を買う必要はなくなった。どちらも同じ追加IOポートに挿さり、
 FFC へ出る4本も同一。
+
+#### ★いまの方針: 左へ移す。LED は使わない
+
+最初は右手に付けて3色とも点灯させるところまで確認できたが、**電池カバーに
+隠れて見えない**。カバーに穴を開けて導光材を挿す案（下記）も、ケーブルを
+引き回せばどのみち隠れるので見送った。
+
+- `build.yaml` から `led-plus` を外した。スニペット自体は残してあるので、
+  戻すなら central 側の `snippet` 行に足すだけ
+- **エクステンダーは左手へ移す。** 左の純正ポートにハイレゾダイヤル、
+  エクステンダーの FFC にミニトラックパッドを載せる。
+  右は純正ポートにトラックボールのまま
+- P0.24（LED の共通アノード ＝ 拡張基板の電源）は `input-ext-trackpad` 側の
+  `power-gpios` が High にするので、`led-plus` を外しても電源は落ちない。
+  **`led-plus` だけを外して拡張基板に何も挿さない構成にすると電源が来なくなる**
+  — `led-plus` の `gpio-hog` が唯一の駆動源だったため
 
 #### 追加IOはメイン列に1.27mm ずらして挟まっている
 
@@ -295,7 +316,7 @@ FreeCAD 版も同じ ref から取れる:
 | 入れるもの | 寸法 |
 |---|---|
 | **エクステンダーの逃げ** | **17.8 × 14.5mm** の凹み。深さはコンスルーのピンの突き出し + 基板厚を実測して決める |
-| **LED の光窓** | 上の凹みの中に **φ2〜3mm** の穴。位置は下記 |
+| ~~LED の光窓~~ | **不要になった**（LED は使わない）。下の実測値は戻したくなったとき用に残す |
 | トラックパッドの開口 | 現物が来てから |
 
 LED の位置（`bmp-boost-led-extender.kicad_pcb` から実測）:
@@ -310,35 +331,82 @@ LED の位置（`bmp-boost-led-extender.kicad_pcb` から実測）:
 
 #### 残っている未確認
 
-1. **エクステンダーが純正FFCポート（白いコネクタ）を塞がないか。** 右手には
-   トラックボールが刺さっている。被るなら左手に移すことになる
-3. nRF52840 は **TWIM1 と SPIM1 が同じペリフェラル**。ext-trackball 版と併用不可
-4. トラックパッドの向き（`v-invert` / `h-invert`）は現物が無いので未調整。
-   上流は `h-invert` を付けている
+1. **エクステンダーが純正FFCポート（白いコネクタ）を塞がないか。**
+   左手ではダイヤルが純正ポートに刺さる。被るならどちらかを諦めることになる
+2. nRF52840 は **TWIM1 と SPIM1 が同じペリフェラル**。ext-trackball 版と併用不可
+3. トラックパッドの向き（`v-invert` / `h-invert`）は現物が無いので未調整。
+   上流は純正ポート側に `h-invert` を付けている
 
-#### `snippets/input-ext-trackpad/` に足りていないもの
+#### `snippets/input-ext-trackpad/` は左手 peripheral 用に書き直した
 
-上流 `snippets/led-plus/led-plus.overlay` のコメントアウト部分と突き合わせた結果、
-ピン・アドレス・`scroller-mode`・ノード名まで一致していたが、3行足りない。
-**ミニパッドを買ったら足すこと。**
+- `init-symbol = "mini_trackpad_iqs7211e_init"` / `init-length = <217>` を追加
+  （書かないとドライバ既定 = 30/40mm 円形モジュール用の blob になる）
+- ローカルのリスナーを切り離した。peripheral 側なので入力は
+  `zmk,input-split` で central へ転送する
 
-```dts
-init-symbol = "mini_trackpad_iqs7211e_init";
-init-length = <217>;
-h-invert;
-```
+| スニペット | 役割 |
+|---|---|
+| `input-ext-trackpad` | `i2c1` + `trackpad_ext@56` のデバイス定義だけ |
+| `input-ext-split` | 送り側（peripheral）。`reg = <1>` |
+| `input-ext-split-listener` | 受け側（central）。`reg = <1>` + リスナー |
+| `input-ext-trackpad-listener` | central に直付けするとき用のローカルリスナー |
 
-（`init-symbol` を書かないとドライバ既定 = 30/40mm 円形モジュール用の blob になる）
+`reg` を 1 にしてあるのは、純正ポート側を転送する `input-split` が 0 を
+使っているから。central 側は `reg` を値で照合するだけなので連番である必要はない
+（`app/src/pointing/input_split.c`）。
 
-### 1-d. `zmk-driver-hires-dial` は未追加のまま
+`h-invert` はまだ付けていない。現物で向きを見てから。
 
-`upstream/feat/input-hires-dial`（`46ea7ca`, 2026-09-01、「動作未確認」）。
-`CONFIG_ZMK_HIRES_DIAL_RADIAL_CONTROLLER` で **Windows の Radial Controller**
-（Surface Dial 相当）になる。ただし HID ディスクリプタが変わるので
-**ペアリング済みホストは再ペアリングが要る場合がある**と README にある。
+### 1-d. ダイヤル — ファームは書いた。現物待ち
 
-押しボタン（P0.19）が row 5 / col 5 に生えるので、4方向スイッチと同じ
-`#if` 方式に乗る。買ったときに `TORABO_TSUKI_LP_INPUT_HIRES_DIAL` を足す。
+`zmk-driver-hires-dial` を `353a2196` で固定して `config/west.yml` に追加し、
+`snippets/input-hires-dial{,-central}/` を書いた。**実機はまだ無い。**
+
+| | 左（モジュール側 / peripheral） | 右（central） |
+|---|---|---|
+| スニペット | `input-hires-dial` | `input-hires-dial-central` |
+| DT | `sekigon,hires-dial@0x75` on `i2c0` | ダミー `sekigon,remote-hires-dial` |
+| Kconfig | `ZMK_HIRES_DIAL` のみ | ＋ `_SCROLL` / `_RADIAL_CONTROLLER` |
+| 押し込み | `kscan-gpio-direct` P0.19 → RC(5,0) | kscan は触らず CPP フラグだけ |
+
+#### 値が離れると壊れるところ
+
+- `counts-per-revolution` は**両側で同じ値**にすること。behavior が
+  コンパイル時に `DT_PROP(DT_INST_PHANDLE(n, sensor), counts_per_revolution)`
+  で読むので、ずれると換算が狂う。いまは上流に合わせて **1275**。
+  モジュールの README は「1回転で約1500カウント」なので、実機で
+  1回転がずれたらここを上げる
+- `triggers-per-rotation` も両側で揃える（いま 20）
+
+#### 上流と違えたところ
+
+上流 `feat/input-hires-dial`（`46ea7ca`、「動作未確認」、CI でもビルドしていない）
+とは2点違う。
+
+1. **押し込みの位置。** 上流は `RC(5,5)` に置き、そのために
+   `TORABO_TSUKI_LP_MATRIX_COL_OFFSET` を新設して composite と変換の
+   col-offset を付け替えている（1-b の二重オフセット問題への対処）。
+   こちらは既存の4方向スイッチと同じ流儀のまま **`RC(5,0)` / 左手側専用**に
+   した。上流を取り込むときはここが衝突する
+2. **スクロールを拾う `zmk,input-listener`。** 上流は `input-hires-dial` に
+   だけ置いていて、split 用の `split-input-hires-dial` に入れていない。
+   `hires_dial_scroll` の behavior は計算したホイール値を自分自身を
+   入力デバイスとして `input_report_rel` するだけなので、**リスナーが
+   無いと回しても1ミリも動かない。** behavior の実体は central 側にしか
+   無いので、リスナーも central 側（`input-hires-dial-central`）に置いた
+
+#### 実機で確認すること
+
+1. 回転方向（逆なら DT に `invert`）
+2. `counts-per-revolution`（1回転でちょうど1周するか）
+3. `sleep1-enable` / `sleep2-enable` で回し始めを取りこぼさないか
+4. **Radial Controller は HID が変わる。** `CONFIG_ZMK_HIRES_DIAL_RADIAL_CONTROLLER`
+   は USB で HID インタフェースを1本増やし、BLE でもレポートマップが変わるので、
+   **ペアリング済みホストは再ペアリングが要る場合がある**とドライバ README にある。
+   接続が変になったら真っ先にここを疑うこと
+5. レイヤー割り当て（`config/keymap.keymap`）
+   — 0 縦スクロール / 2 音量 / 4 横スクロール / 5 Radial Controller。
+   押し込みは 0 でミドルクリック、5 で Surface Dial のボタン
 
 ### 1-e. パッドの直径が未確認
 

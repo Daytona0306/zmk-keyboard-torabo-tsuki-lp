@@ -867,7 +867,9 @@ right: "studio-rpc-usb-uart split-central input-trackball input-listener
 | 両手にトラックボール | `... input-trackball input-split` | パッドのときと同じ |
 | 左に4方向スイッチ ★左手側専用 | `... kscan-4-direction-switch` | `... kscan-4-direction-switch-central` |
 | 左右を入れ替える | `... split-central input-trackball input-listener` | `studio-rpc-usb-uart` |
-| Extender Mini で右手に2個目 ★未検証 | — | `... input-ext-trackpad` を足す |
+| 左にダイヤル + 拡張基板のパッド ★未検証 | `... input-hires-dial input-ext-trackpad input-ext-split` | `... input-hires-dial-central input-ext-split-listener` |
+| central 側に拡張基板で2個目 ★未検証 | — | `... input-ext-trackpad input-ext-trackpad-listener` を足す |
+| LED Extender を光らせる | — | `... led-plus` を足す（central 側のみ） |
 
 ### 拡張モジュールは片側に1つだけ
 
@@ -883,9 +885,32 @@ right: "studio-rpc-usb-uart split-central input-trackball input-listener
 `spi0` と `i2c0` が**同じ P0.18 / P0.16 に載っている**のが効いています。
 さらにトラックボールとトラックパッドのスニペットは `pointing_device` という同じノードラベルを使うため、DTS 上でも同居できません。
 
-2個載せたいなら **左右で分担する**（構成 C〜E）か、
-[`ngsyst/bmp_boost_extender_mini`](https://github.com/ngsyst/bmp_boost_extender_mini) で BMP Boost の追加IOポート（P0.17 / P0.21、割り込み P0.31、電源 P0.24）を引き出します。
-後者の足場として `snippets/input-ext-trackpad/` を置いてありますが、**現物での検証はしていません**。build.yaml にも入れていません。
+2個載せたいなら **左右で分担する**（構成 C〜E）か、追加IOポート（P0.17 / P0.21、割り込み P0.31、電源 P0.24）を FFC へ引き出す小基板を挟みます。
+候補は **BMP Boost LED Extender**（せきごんさん。キーフリ2026 で配布されたもの）と
+[`ngsyst/bmp_boost_extender_mini`](https://github.com/ngsyst/bmp_boost_extender_mini) で、どちらも同じ4本を出します。
+
+**いまの計画は「左に2個」**です。左の純正ポートにハイレゾダイヤル、左のエクステンダー FFC にミニトラックパッドを載せ、右は純正ポートにトラックボールのまま。
+足場として次のスニペットを置いてありますが、**現物がまだ無いので実機検証はしていません**（build.yaml には入れてあり、CI でビルドが通ることだけ確認しています）。
+
+| snippet | 役割 |
+|---|---|
+| `input-hires-dial` | 左。`sekigon,hires-dial@0x75` + 押し込み用の kscan |
+| `input-hires-dial-central` | 右。ダミーセンサー `sekigon,remote-hires-dial` + behavior + リスナー |
+| `input-ext-trackpad` | 左。`i2c1` の `trackpad_ext@56` のデバイス定義だけ |
+| `input-ext-split` | 左。パッドの入力を split で転送（`reg = <1>`） |
+| `input-ext-split-listener` | 右。それを受ける（`reg = <1>`） |
+| `input-ext-trackpad-listener` | central に直付けするとき用のローカルリスナー |
+
+**ダイヤルの押し込みでマトリクス変換が1行伸びるので、左右は必ず組で焼いてください。**
+
+#### LED Extender の LED は使っていません
+
+3色とも点灯するところまでは確認しましたが、**電池カバーに隠れて見えない**ので `build.yaml` から `led-plus` を外しました。
+`snippets/led-plus/` はそのまま残してあります。
+
+**★P0.24 に注意。** これは LED の共通アノードであると同時に拡張基板の電源で、`led-plus` はこれを `gpio-hog` で High に固定します。
+いまは `input-ext-trackpad` の `power-gpios` が駆動しているので問題ありませんが、
+**`led-plus` を外したうえで拡張基板に何も挿さない構成にすると、基板に電源が来ません。**
 
 ### トラックパッドの2つのスニペットは用途が違う
 
