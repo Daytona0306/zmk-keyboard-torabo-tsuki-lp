@@ -265,19 +265,29 @@ FreeCAD のソースがあるので、開けば寸法を直接読める。
 
 `0155059「V2用データを公開」`（2026-06-15）でカバー類が差し替わっている。
 
-- 手持ちが V2 なら → `master` のデータ
-- 手持ちが V1 なら → その1つ前の **`32060c2`**（2026-06-07）のデータ
+**★手持ちは V1。** したがって `master` ではなく **`d512de6`（2026-03-22）から落とすこと。**
 
-**★手持ちは V1。** したがって `master` ではなく **`32060c2` から落とすこと。**
-S サイズ = 単三なので `aa`。左右あるので `-Body` と `-Body-mirror` の両方が要る。
+ハッシュで境目を確定させた（`controller-cover-aa-trackpad-Body.stl`）:
+
+| ref | 日付 | サイズ | sha256 先頭 | |
+|---|---|---|---|---|
+| `d512de6` | 2026-03-22 | 695,184 | `03ca1d0e5d16…` | **V1** |
+| `32060c2` | 2026-06-07 | 695,184 | `03ca1d0e5d16…` | **V1**（d512de6 と同一） |
+| `0155059` | 2026-06-15 | 694,784 | `939cad486735…` | V2 |
+| `master` | — | 694,784 | `939cad486735…` | V2 |
+
+`32060c2`「v2の情報を追加」はこのパスの別ファイルを触っただけで STL は変えていない。
+**V1 として使えるのは `d512de6` または `32060c2` のどちらでもよい。**
+
+S サイズ = 単三なので `aa`。左右で別部品なので `-Body` と `-Body-mirror` の両方が要る。
 
 ```
-https://raw.githubusercontent.com/sekigon-gonnoc/torabo-tsuki-lp/32060c2/3d-models/STL/option/mini-trackpad/controller-cover-aa-trackpad-Body.stl
-https://raw.githubusercontent.com/sekigon-gonnoc/torabo-tsuki-lp/32060c2/3d-models/STL/option/mini-trackpad/controller-cover-aa-trackpad-Body-mirror.stl
+https://raw.githubusercontent.com/sekigon-gonnoc/torabo-tsuki-lp/d512de6/3d-models/STL/option/mini-trackpad/controller-cover-aa-trackpad-Body.stl
+https://raw.githubusercontent.com/sekigon-gonnoc/torabo-tsuki-lp/d512de6/3d-models/STL/option/mini-trackpad/controller-cover-aa-trackpad-Body-mirror.stl
 ```
 
-4ファイルとも `32060c2` に存在することは確認済み（通常版 715,184 B / トラックパッド版 695,184 B、
-`-mirror` も同サイズ）。
+`mini-trackpad` 配下の4ファイルすべてが V1/V2 で異なり、差はいずれも 400 バイト
+（= 8 三角形）で揃っている。同じ修正が4バリアント全部に入れられている。
 
 FreeCAD 版も同じ ref から取れる:
 `3d-models/FreeCAD/option/controller-cover-aa-trackpad.FCStd`
