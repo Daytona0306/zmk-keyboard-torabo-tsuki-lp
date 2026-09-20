@@ -265,15 +265,22 @@ FreeCAD のソースがあるので、開けば寸法を直接読める。
 
 `0155059「V2用データを公開」`（2026-06-15）でカバー類が差し替わっている。
 
-- **手持ちが V2 なら** → `master` のデータ
-- **手持ちが V1 なら** → その1つ前の **`32060c2`**（2026-06-07）のデータ
+- 手持ちが V2 なら → `master` のデータ
+- 手持ちが V1 なら → その1つ前の **`32060c2`**（2026-06-07）のデータ
+
+**★手持ちは V1。** したがって `master` ではなく **`32060c2` から落とすこと。**
+S サイズ = 単三なので `aa`。左右あるので `-Body` と `-Body-mirror` の両方が要る。
 
 ```
 https://raw.githubusercontent.com/sekigon-gonnoc/torabo-tsuki-lp/32060c2/3d-models/STL/option/mini-trackpad/controller-cover-aa-trackpad-Body.stl
+https://raw.githubusercontent.com/sekigon-gonnoc/torabo-tsuki-lp/32060c2/3d-models/STL/option/mini-trackpad/controller-cover-aa-trackpad-Body-mirror.stl
 ```
 
-**手持ちが V1 か V2 か、まだ確認していない。** キーフリ2026 で「v1 各サイズ」が
-売られていたので V2 は実在する。刷る前に確定させること。
+4ファイルとも `32060c2` に存在することは確認済み（通常版 715,184 B / トラックパッド版 695,184 B、
+`-mirror` も同サイズ）。
+
+FreeCAD 版も同じ ref から取れる:
+`3d-models/FreeCAD/option/controller-cover-aa-trackpad.FCStd`
 
 | 入れるもの | 寸法 |
 |---|---|
