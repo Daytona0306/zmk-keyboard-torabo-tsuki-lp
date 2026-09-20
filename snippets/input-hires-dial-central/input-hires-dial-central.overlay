@@ -46,13 +46,47 @@
     /* ダミーのセンサー。I2C にも GPIO にも触らない。 */
     remote_hires_dial: remote_hires_dial {
         compatible = "sekigon,remote-hires-dial";
-        counts-per-revolution = <1500>;  /* ★ input-hires-dial 側と揃えること */
+        counts-per-revolution = <1275>;  /* ★ input-hires-dial 側と揃えること */
     };
 
     keymap_sensors: sensors {
         compatible = "zmk,keymap-sensors";
         sensors = <&remote_hires_dial>;
         triggers-per-rotation = <20>;    /* ★ こちらも揃えること */
+    };
+
+    /* ★これが無いとスクロールが1ミリも動かない★
+     *
+     * hires_dial_scroll / hires_dial_hscroll の behavior は、計算した
+     * ホイール値を「自分自身を入力デバイスとして」報告する:
+     *     input_report_rel(dev, cfg->input_code, wheel, true, K_FOREVER);
+     *                      ^^^ behavior デバイス
+     * (zmk-driver-hires-dial/src/behaviors/behavior_hires_dial_scroll.c)
+     * つまり behavior は input サブシステムにイベントを流すだけで、
+     * HID には自分では送らない。拾って HID に変えるのが input-listener。
+     *
+     * ★peripheral 側には絶対に置かないこと★
+     * behavior のソースは
+     *   if((NOT CONFIG_ZMK_SPLIT) OR CONFIG_ZMK_SPLIT_ROLE_CENTRAL)
+     * で囲われているので peripheral にはデバイスが存在せず、
+     * zmk,input-listener の DEVICE_DT_GET がリンクエラーになる。
+     *
+     * NOTE: 上流の feat/input-hires-dial ブランチは、このリスナーを
+     *       input-hires-dial 側にしか置いておらず、split 用の
+     *       split-input-hires-dial には入っていない。あのブランチは
+     *       「動作未確認」と明記されていて CI でもビルドしていないので、
+     *       取りこぼしと思われる。
+     */
+    hires_dial_scroll_listener: hires_dial_scroll_listener {
+        compatible = "zmk,input-listener";
+        device = <&hires_dial_scroll>;
+        status = "okay";
+    };
+
+    hires_dial_hscroll_listener: hires_dial_hscroll_listener {
+        compatible = "zmk,input-listener";
+        device = <&hires_dial_hscroll>;
+        status = "okay";
     };
 };
 

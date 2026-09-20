@@ -35,16 +35,26 @@
  *
  * ── カウント数 ───────────────────────────────────────────────
  * counts-per-revolution は「1回転で溜まる Y カウント数」。
- * モジュールの README は「1回転で約1500カウント」と書いている。
- * ドライバ README の DT 例は 1275 なので、実機で回してみて
- * 1回転がずれるようならここを調整する (大きくすると回転が鈍くなる)。
+ * ここの 1275 と sleep1/sleep2 は、モジュール作者自身の DT
+ * (上流 sekigon-gonnoc/zmk-keyboard-torabo-tsuki-lp の
+ *  feat/input-hires-dial ブランチ) に合わせてある。
+ * ただしモジュールの README には「1回転で約1500カウント」とあるので、
+ * 実機で1回転がずれるようならここを上げる (大きくすると回転が鈍くなる)。
+ * ★central 側の sekigon,remote-hires-dial と必ず同じ値にすること★
+ * behavior はこの値をコンパイル時に読むので、ずれると換算が狂う。
  * triggers-per-rotation はエンコーダとして使うときのクリック数で、
- * 1500 / 20 = 75 カウントごとに1回 behavior が走る。
+ * 1275 / 20 = 約64カウントごとに1回 behavior が走る。
  *
  * ── 未調整 ───────────────────────────────────────────────────
- * sleep1-enable / sleep2-enable は入れていない。消費電流を下げる代わりに
- * 回し始めの数カウントを取りこぼす可能性がある。電池の減りが気になったら
- * まずここを試すこと。回転方向が逆なら invert を足す。
+ * 回転方向が逆なら invert を足す。
+ *
+ * ★このスニペットは peripheral 側専用として書いてある★
+ * スクロール用の zmk,input-listener を置いていない。behavior の実体は
+ * central 側にしか無く (CMakeLists が central に限定している)、
+ * peripheral で DEVICE_DT_GET するとリンクエラーになるため。
+ * ダイヤルを central や非スプリットで使うときは、
+ * snippets/input-hires-dial-central/ にあるリスナー2個をこちらへ写し、
+ * conf に SCROLL / RADIAL_CONTROLLER を足すこと。
  */
 
 #if defined(TORABO_TSUKI_LP_KSCAN_4_DIRECTION_SWITCH)
@@ -73,10 +83,12 @@
         compatible = "sekigon,hires-dial";
         reg = <0x75>;
         res-cpi = <1275>;                /* 最大値 = ドライバ既定 */
-        counts-per-revolution = <1500>;  /* 上のコメント参照 */
+        counts-per-revolution = <1275>;  /* 上のコメント参照 */
         motion-read-interval-ms = <8>;
         motion-gpios = <&gpio0 20 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
         power-gpios = <&gpio0 8 (GPIO_ACTIVE_HIGH | NRF_GPIO_DRIVE_H0H1)>;
+        sleep1-enable;
+        sleep2-enable;
     };
 };
 
