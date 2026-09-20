@@ -40,6 +40,31 @@
 
 #include <zephyr/dt-bindings/gpio/gpio.h>
 
+/* ★LED の共通アノードは P0.24 (回路図のネット名 POW) に繋がっている。
+ * ここを High にしないと、3色とも一切光らない。
+ *
+ *   P0.24 ──┬─ LED共通アノード ─┬─ 赤 ─ R101 ─ P1.11
+ *           │                   ├─ 緑 ─ R102 ─ P1.10
+ *           │                   └─ 黄 ─ R103 ─ P1.02
+ *           └─ FFC コネクタ 6番 (拡張モジュールの電源)
+ *
+ * GPIO 側が電流を吸う向きなので、各 LED が ACTIVE_LOW なのは正しい。
+ *
+ * ★上流の snippets/led-plus は P0.24 を駆動していない。
+ * あちらで P0.24 を High にしているのはコメントアウトされた trackpad_ext の
+ * power-gpios だけなので、上流のスニペット単体では光らないはず。
+ *
+ * snippets/input-ext-trackpad を併用すると、そちらの power-gpios も同じ
+ * P0.24 を ACTIVE_HIGH で握る。どちらも High にするだけなので実害はない。
+ */
+&gpio0 {
+    led_ext_power_hog {
+        gpio-hog;
+        gpios = <24 GPIO_ACTIVE_HIGH>;
+        output-high;
+    };
+};
+
 / {
     aliases {
         led-red   = &led_red;      /* P1.11 → 赤 */
