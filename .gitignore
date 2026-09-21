@@ -1,0 +1,3 @@
+# west-pins.py を import して確かめるときに出る
+__pycache__/
+*.pyc

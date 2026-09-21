@@ -14,10 +14,17 @@ import argparse, re, subprocess, sys
 from pathlib import Path
 
 WEST = Path(__file__).resolve().parent.parent / "config" / "west.yml"
-RE_REMOTE = re.compile(r"^\s*- name:\s*(\S+)\s*$")
-RE_URLBASE = re.compile(r"^\s*url-base:\s*(\S+)\s*$")
-RE_NAME = re.compile(r"^(\s*)- name:\s*(\S+)\s*$")
-RE_REMOTE_OF = re.compile(r"^\s*remote:\s*(\S+)\s*$")
+# 行末コメントを許す。remotes: の各行に説明を書いている manifest があるため
+# (例: `- name: cormoran   # DYA Studio 本体`)。これを許さないと remotes が
+# 1つも拾えず、projects 側で KeyError になる。
+_C = r"\s*(?:#.*)?$"
+RE_REMOTE = re.compile(r"^\s*- name:\s*(\S+)" + _C)
+RE_URLBASE = re.compile(r"^\s*url-base:\s*(\S+)" + _C)
+RE_NAME = re.compile(r"^(\s*)- name:\s*(\S+)" + _C)
+RE_REMOTE_OF = re.compile(r"^\s*remote:\s*(\S+)" + _C)
+# revision 行だけは緩めない。`# track:` 以外のコメントが付いた行は
+# 「読み切れなかった」として素通しする。緩めると書き換え時にその
+# コメントを消してしまう。
 RE_REV = re.compile(r"^(\s*revision:\s*)(\S+)(\s*#\s*track:\s*(\S+))?\s*$")
 SHA = re.compile(r"^[0-9a-f]{40}$")
 
@@ -91,6 +98,11 @@ def main():
                 if args.unpin:
                     new = f"{indent}{ref}"
                 else:
+                    if remote not in remotes:
+                        raise SystemExit(
+                            f"remote '{remote}' ({name}) の url-base が読めない。"
+                            " remotes: ブロックの書式を確認すること"
+                        )
                     sha = resolve(f"{remotes[remote]}/{name}", ref)
                     if args.check:
                         if SHA.match(value) and value != sha:
