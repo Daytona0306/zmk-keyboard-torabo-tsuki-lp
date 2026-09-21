@@ -10,7 +10,7 @@ torabo-tsuki 側の未着手・未確認事項。片付いたら消すこと。
 | DYA Studio の USB 接続不良 | 切り分け打ち切り。あわせて `CONFIG_ZMK_OS_DETECTION_USB` を `=y` に戻した（このシンボルは原因ではない） |
 | 慣性スクロール | 現状の値で確定。調査結果は README「スクロールの調整はどこで効くか」へ |
 | スクロール倍率の控え | 値は記録しない。「Studio で変えた値はリポジトリに残らない」ことだけ README に記載 |
-| west.yml のリビジョン固定 | 29 プロジェクトすべて SHA 固定。`update-modules` ブランチと `tools/west-pins.py` を用意。運用は README「ブランチ運用」へ |
+| west.yml のリビジョン固定 | 31 プロジェクトすべて SHA 固定。`update-modules` ブランチと `tools/west-pins.py` を用意。運用は README「ブランチ運用」へ |
 
 ---
 
@@ -491,15 +491,7 @@ revision を上流の SHA にするだけ。
 
 ---
 
-## 2. ブランチまわりの手作業 — あと2つ
-
-1. **Default branch を `main` にする** — Settings → General。表示だけで動作には影響しない
-2. **`update-modules` を作る** — 浮動の manifest を置いて上流追随を試す場所。
-   `tools/west-pins.py --unpin` で作る。運用は README「ブランチ運用」
-
----
-
-## 3. RAM が足りなくなったらここ — せきごんさんのメモリ削減ブランチ
+## 2. RAM が足りなくなったらここ — せきごんさんのメモリ削減ブランチ
 
 **いま入れる必要はない。** 不具合が出ていないなら空いた RAM は何もしないため。
 「機能を足したいのに RAM で詰まった」と分かった時点で検討する。
