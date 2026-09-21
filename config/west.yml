@@ -1,3 +1,26 @@
+# ===========================================================================
+#  ★このファイルは update-modules ブランチ専用の「浮動」版です★
+#
+#  revision が SHA ではなくブランチ名になっています。west update のたびに
+#  上流の先頭を引くので、ビルドの再現性がありません。
+#
+#  ★このブランチを main にマージしないこと。★
+#  main は SHA 固定でなければなりません（理由は README「なぜ main を固定
+#  するのか」。過去に浮動のまま上流の破壊的変更を食らってビルドが落ちた
+#  ことがあります）。
+#
+#  使い方
+#    1. main から作り直す
+#         git checkout -B update-modules main
+#         tools/west-pins.py --unpin
+#    2. push して CI を見る
+#    3. 緑なら main 側で tools/west-pins.py を実行して SHA を進める
+#       （main に持っていくのは「新しい SHA」であって、この浮動版ではない）
+#    4. 赤ならどのモジュールが壊したかを調べる。それがこのブランチの仕事
+#
+#  tools/west-pins.py --check なら、固定したまま「上流が進んでいるか」
+#  だけを見られます。
+# ===========================================================================
 manifest:
   remotes:
     - name: zmkfirmware
@@ -28,7 +51,7 @@ manifest:
     # 旧 v0.3-branch+dya は Zephyr 3.5 だったのでメジャー更新にあたる。
     - name: zmk
       remote: cormoran
-      revision: e5c9b6915b56801193e359dd9bad4a167ce0d1b8  # track: main+dya
+      revision: main+dya
       import: app/west.yml
 
     # ── ボード ──────────────────────────────────────────────────
@@ -36,18 +59,18 @@ manifest:
     # master が HWMv2 対応 (board.yml あり) なのでこちらを使う。
     - name: zmk-component-bmp-boost
       remote: sekigon-gonnoc
-      revision: 2f5567523b6f0bc39575d48ed746ed9d635edf8b  # track: master
+      revision: master
       import: west.yml
 
     # ── sekigon 系モジュール (v0.2 ブランチは旧線なので main へ) ──
     - name: zmk-feature-status-led
       remote: sekigon-gonnoc
-      revision: 572d0e16ecdd6b6d57e96461643cc55e7b9164d3  # track: main
+      revision: main
     # torabo-tsuki ブランチは main + torabo 向け調整1コミット。
     # main 側は 2026-02 から進んでいないため調整入りを維持する。
     - name: zmk-driver-paw3222
       remote: sekigon-gonnoc
-      revision: 0e1835c57f88d215ce401b6d0901f361629621fc  # track: torabo-tsuki
+      revision: torabo-tsuki
     # トラックパッド (Azoteq IQS7211E)。snippets/input-trackpad{,-mini} が使う。
     # revision 無指定だと west の既定 master になるため本家と同じ挙動。
     # CONFIG_IQS7211E は既定 n (menuconfig / default 無し) で、
@@ -55,7 +78,7 @@ manifest:
     # スニペットを指定しない限りビルドには一切入らない。
     - name: zmk-driver-iqs7211e
       remote: sekigon-gonnoc
-      revision: 436d3c42172abf812ec104521f29384fc02fc50e  # track: master
+      revision: master
     # 高分解能ダイヤル (PAT912x, I2C 0x75)。snippets/input-hires-dial{,-central} が使う。
     # CONFIG_ZMK_HIRES_DIAL は既定 n (menuconfig) で、CMakeLists も
     # zephyr_library_sources_ifdef で囲われているため、スニペットを
@@ -77,80 +100,80 @@ manifest:
     #   パッチの実体は tools/hires-dial-zmk-main.patch。
     - name: zmk-driver-hires-dial
       remote: Daytona0306
-      revision: 220419580c19a20ed0d979f12a130928c0834f69  # track: zmk-main-endpoints
+      revision: zmk-main-endpoints
     - name: zmk-feature-cdc-acm-bootloader-trigger
       remote: sekigon-gonnoc
-      revision: 37ca1ef9e42d62040387590542585da033d12571  # track: main
+      revision: main
     - name: zmk-feature-non-lipo-battery-management
       remote: sekigon-gonnoc
-      revision: 43fa56fb7d1e065393e926b6caa0ea02cb86eca7  # track: main
+      revision: main
     # 4方向スイッチの kscan ドライバ。本家にはスニペットもあるがこちらには無い。
     # CONFIG_ZMK_KSCAN_4_DIRECTION_SWITCH_DRIVER は default y だが
     # depends on DT_HAS_ZMK_KSCAN_4_DIRECTION_SWITCH_ENABLED のため、
     # 対応する DT ノードが無い現状では n のまま。
     - name: zmk-driver-kscan-4-direction-switch
       remote: sekigon-gonnoc
-      revision: 2329edb80a589fdf4245b4edace0e9c1d3424b83  # track: master
+      revision: master
 
     # ── DYA Studio 基盤 ─────────────────────────────────────────
     # custom-settings は設定の永続化レイヤで、runtime-* 系がこの上に乗る。
     - name: zmk-feature-custom-settings
       remote: cormoran
-      revision: c6a7fef3a3be3d3ace5de9a4b0628c6418cd1f3f  # track: main
+      revision: main
     - name: zmk-module-ble-management
       remote: cormoran
-      revision: 57738cc4fc6ba80e82a7ac57741a0339cb186cd4  # track: main
+      revision: main
     - name: zmk-module-settings-rpc
       remote: cormoran
-      revision: 78f86df9e6c5edaf57bef3ccbd7f360cfdf49291  # track: main
+      revision: main
     - name: zmk-module-runtime-input-processor
       remote: cormoran
-      revision: 43618985f8c9d5457cc333b7ca0733f2d361911e  # track: main
+      revision: main
     # shield の torabo_tsuki_lp.dtsi が
     # <behaviors/battery_history_request.dtsi> を include しているため、
     # 機能を使わなくてもモジュール自体は必要 (CONFIG は既定の n のまま)。
     - name: zmk-module-battery-history
       remote: cormoran
-      revision: 307755dd2ad4d320e14de162e8e5ef018f29d929  # track: main
+      revision: main
 
     # ── マクロ / コンボのランタイム編集 ─────────────────────────
     # DYA Studio の「マクロ&コンボ」タブから編集できるようになる。
     - name: zmk-feature-runtime-combo
       remote: cormoran
-      revision: d9490e7b5d41c516221d131241009e81740efcee  # track: main
+      revision: main
     - name: zmk-feature-runtime-macro
       remote: cormoran
-      revision: 38530962eb7061b60efcb98e84585cfb1f0cb6de  # track: main
+      revision: main
 
     # ── DYA Studio の診断タブ ───────────────────────────────────
     # キースイッチ (押下統計・チャタリング検出)
     - name: zmk-feature-kscan-diagnostics
       remote: cormoran
-      revision: 1432f7fe0cfe903cd7d3c9931ae6bd6f2e1f328e  # track: main
+      revision: main
     # キースイッチ診断のライブ表示 (kscan-diagnostics の推奨依存)
     - name: zmk-feature-input-stream
       remote: cormoran
-      revision: aeb015908a42a7615ccdccc7feb3a10d23132a71  # track: main
+      revision: main
     # 安定性 (フリーズ・ハードフォルト・予期しないリセットを記録)
     - name: zmk-feature-watchdog
       remote: cormoran
-      revision: 84ad14c6c3645dc40b23f45d08ab45418655f912  # track: main
+      revision: main
     # デバイス情報 (ビルド / ハードウェア / ランタイムの詳細)
     - name: zmk-feature-device-info
       remote: cormoran
-      revision: 8cedd2dd9f04e19ea5a17b94914dd47a09d8db11  # track: main
+      revision: main
     # スタック使用量など開発者向けツール
     - name: zmk-module-devtool
       remote: cormoran
-      revision: 9938a2c73c06d6e65ba2c0b68c9aa044a467eafc  # track: main
+      revision: main
     # Zephyr settings の閲覧
     - name: zmk-feature-zephyr-setting-expose
       remote: cormoran
-      revision: 5c89bc71122840ea46032fc241bef8665b99728a  # track: main
+      revision: main
     # Studio RPC の性能計測
     - name: zmk-feature-studio-rpc-perf
       remote: cormoran
-      revision: b6ccb08cdc46e9e6341b0c42b97f78f05df0939e  # track: main
+      revision: main
 
     # ── 接続先 / OS ごとのデフォルトレイヤー ───────────────────
     # DYA Studio の「OS ごとのデフォルトレイヤー」パネルの実体。
@@ -160,36 +183,36 @@ manifest:
     #       パネルから操作できないため codex/custom-rpc-rewrite を使う。
     - name: zmk-feature-default-layer
       remote: cormoran
-      revision: b25cb5b324da2d9bbc84e1877c775f5b2b7c6845  # track: codex/custom-rpc-rewrite
+      revision: codex/custom-rpc-rewrite
     # OS 判定。default-layer の OS 連動に必要。
     - name: zmk-feature-os-detection
       remote: cormoran
-      revision: 3052679f645b8fc1997275c2eaa6b86bdd55ca01  # track: main
+      revision: main
 
     # ── スクロール / ジェスチャー ───────────────────────────────
     - name: zmk-scroll-snap
       remote: kot149
-      revision: a0002b36dcb8b6d85c9aab7d6ad1ebcee6bc7c97  # track: v1
+      revision: v1
     # kot149/v1 の上に7コミット。ZMK v0.4 の endpoints API 改名対応と、
     # ジェスチャー入力中にカーソルが動くのを抑制する機能が入っている。
     # DT プロパティと Kconfig は kot149/v1 から変わっておらず
     # gestures.dtsi はそのまま使える (抑制は実行時に自動で効く)。
     - name: zmk-mouse-gesture
       remote: shakushakupanda
-      revision: 10597a47ed60b5f7c07710a0eeff7f7cb9576a1e  # track: suppress-cursor-while-active
+      revision: suppress-cursor-while-active
     # ジェスチャーを Flash に保存し Web UI / Studio から編集できるようにする。
     # 書き換え対象は DT インスタンス0番のみ (DEVICE_DT_GET(DT_DRV_INST(0))) なので、
     # gestures.dtsi の6プロセッサ (レイヤー連動・個別チューニング) はそのまま残る。
     # そのため RPC 用の mg ノードを right.overlay の先頭側で定義し0番を取らせている。
     - name: zmk-module-mouse-gesture-rpc
       remote: shakushakupanda
-      revision: 1374f1d487d5df07d6d990f1c058d9c7a313f90d  # track: main
+      revision: main
     - name: zmk-listeners
       remote: ssbb
-      revision: c240ceaf353d3138bea7695eef17049b7ade995b  # track: v1
+      revision: v1
     - name: zmk-input-processor-scroll-inertia
       remote: mjmjm0101
-      revision: f7dadefee453d555fe066d13a3de3bb60739b45e  # track: main
+      revision: main
 
     # ── LED (BMP Boost LED Extender) ────────────────────────────
     # 3色LED を叩くウィジェット。snippets/led-plus が使う。
@@ -198,6 +221,6 @@ manifest:
     # moNa2 では rgbled_adapter シールド経由で同じモジュールを使っている。
     - name: zmk-rgbled-widget
       remote: caksoylar
-      revision: e6b467792a1dabef8cfa5c9fd26bfefc9c16662b  # track: main
+      revision: main
   self:
     path: config
