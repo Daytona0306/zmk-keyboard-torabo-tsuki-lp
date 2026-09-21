@@ -206,10 +206,22 @@
 #endif
 >;
 #if defined(TORABO_TSUKI_LP_INPUT_HIRES_DIAL)
-            /* 既定は高分解能の縦スクロール。1入力カウント = WHEEL 値1。
-             * 速すぎるなら <4 1> (1/4) のように第1引数を上げる。
-             * ここだけは必ず置くこと — レイヤー0は常時 ON なので、
-             * sensor-bindings を書いていないレイヤーはここへ落ちてくる。 */
+            /* ★ダイヤルの割当は moNa2 のロータリーエンコーダに合わせてある★
+             * 対応はレイヤー「名」で取った。moNa2 とは bluetooth と
+             * gest_arrow の並び順が入れ替わっているため、番号では合わない。
+             *
+             * レイヤー0は常時 ON なので、sensor-bindings を書いていない
+             * レイヤーはここへ落ちてくる (moNa2 も同じ作り)。
+             *
+             * moNa2: scroll_up_down (CW = 下方向)
+             * 1入力カウント = WHEEL 値1 の高分解能スクロール。moNa2 の
+             * &msc SCRL_DOWN と違い、クリック単位ではなく滑らかに出る。
+             * 速すぎるなら <4 1> のように第1引数を上げる。
+             *
+             * ★回転方向が逆だったら、ここではなく
+             *  snippets/input-hires-dial/ の DT に invert を足すこと。
+             *  縦横まとめて反転する (moNa2 は CW で 下/左 の両方なので、
+             *  符号の向きは揃っている)。 */
             sensor-bindings = <&hires_dial_scroll 1 1>;
 #endif
         };
@@ -267,9 +279,8 @@
 #endif
 >;
 #if defined(TORABO_TSUKI_LP_INPUT_HIRES_DIAL)
-            /* 数字/記号レイヤーでは音量。エンコーダ扱いになり、
-             * triggers-per-rotation (=20) ごとに1回キーが飛ぶ。 */
-            sensor-bindings = <&hires_dial_encoder C_VOL_UP C_VOL_DN>;
+            /* moNa2: scroll_right_left (CW = 左方向) */
+            sensor-bindings = <&hires_dial_hscroll 1 1>;
 #endif
         };
 
@@ -287,6 +298,10 @@
 &trans
 #endif
 >;
+#if defined(TORABO_TSUKI_LP_INPUT_HIRES_DIAL)
+            /* moNa2: scroll_up_down */
+            sensor-bindings = <&hires_dial_scroll 1 1>;
+#endif
         };
 
         MOUSE {
@@ -304,8 +319,12 @@
 #endif
 >;
 #if defined(TORABO_TSUKI_LP_INPUT_HIRES_DIAL)
-            /* マウスレイヤーでは横スクロール。 */
-            sensor-bindings = <&hires_dial_hscroll 1 1>;
+            /* moNa2: rsr_vol (CW = 音量を下げる)。
+             * 第1引数が CW、第2引数が CCW
+             * (behavior_hires_dial_encoder.c: triggers > 0 なら param1)。
+             * これだけエンコーダ扱いで、triggers-per-rotation (=20) ごとに
+             * 1回キーが飛ぶ。 */
+            sensor-bindings = <&hires_dial_encoder C_VOL_DN C_VOL_UP>;
 #endif
         };
 
@@ -326,9 +345,11 @@
 #endif
 >;
 #if defined(TORABO_TSUKI_LP_INPUT_HIRES_DIAL)
-            /* Windows の Radial Controller (Surface Dial)。
+            /* ★このレイヤーだけ moNa2 と違う (moNa2 は scroll_right_left)。
+             * Windows の Radial Controller (Surface Dial)。
              * <4 1> は物理回転を 1/4 に縮めて送る。
-             * Windows 以外では何も起きない。 */
+             * Windows 以外では何も起きない。
+             * 押し込みも Surface Dial のボタンになる (上の bindings 参照)。 */
             sensor-bindings = <&hires_dial_radial_controller 4 1>;
 #endif
         };
@@ -347,6 +368,10 @@
 &trans
 #endif
 >;
+#if defined(TORABO_TSUKI_LP_INPUT_HIRES_DIAL)
+            /* moNa2: scroll_up_down */
+            sensor-bindings = <&hires_dial_scroll 1 1>;
+#endif
         };
 
         gest_arrow {
@@ -363,6 +388,10 @@
 &trans
 #endif
 >;
+#if defined(TORABO_TSUKI_LP_INPUT_HIRES_DIAL)
+            /* moNa2: scroll_right_left */
+            sensor-bindings = <&hires_dial_hscroll 1 1>;
+#endif
         };
 
         gest_tab {

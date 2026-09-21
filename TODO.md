@@ -400,9 +400,37 @@ LED の位置（`bmp-boost-led-extender.kicad_pcb` から実測）:
 1. 回転方向（逆なら DT に `invert`）
 2. `counts-per-revolution`（1回転でちょうど1周するか）
 3. `sleep1-enable` / `sleep2-enable` で回し始めを取りこぼさないか
-4. レイヤー割り当て（`config/keymap.keymap`）
-   — 0 縦スクロール / 2 音量 / 4 横スクロール / 5 Radial Controller。
-   押し込みは 0 でミドルクリック、5 で Surface Dial のボタン
+4. レイヤー割り当て（`config/keymap.keymap`）— **moNa2 のロータリー
+   エンコーダに合わせてある。** 対応はレイヤー「名」で取った
+   （moNa2 とは `bluetooth` と `gest_arrow` の並び順が入れ替わっているので
+   番号では合わない）
+
+   | レイヤー | moNa2 のエンコーダ | torabo のダイヤル |
+   |---|---|---|
+   | 0 Base | `scroll_up_down`（CW=下） | `&hires_dial_scroll 1 1` |
+   | 1 iPad | なし → 0 に落ちる | なし |
+   | 2 NUM/SYM1 | `scroll_right_left`（CW=左） | `&hires_dial_hscroll 1 1` |
+   | 3 SYM2 | `scroll_up_down` | `&hires_dial_scroll 1 1` |
+   | 4 MOUSE | `rsr_vol`（CW=音量down） | `&hires_dial_encoder C_VOL_DN C_VOL_UP` |
+   | **5 NUM-SCROLL** | ~~`scroll_right_left`~~ | **`&hires_dial_radial_controller 4 1`** |
+   | 6 bluetooth | `scroll_up_down` | `&hires_dial_scroll 1 1` |
+   | 7 gest_arrow | `scroll_right_left` | `&hires_dial_hscroll 1 1` |
+   | 8〜12 gest_* | なし | なし |
+
+   **レイヤー5 だけ意図的に moNa2 と変えている**（Surface Dial を使いたいため）。
+   moNa2 に完全に揃えたくなったら `&hires_dial_hscroll 1 1` に戻し、
+   あわせて `CONFIG_ZMK_HIRES_DIAL_RADIAL_CONTROLLER` を `n` にすること
+   （使わないのに有効だと USB の HID が1本増えるだけ損）。
+
+   moNa2 との実装の違い: moNa2 は `&msc SCRL_*` をクリック単位で飛ばすが、
+   こちらは `hires_dial_scroll` の高分解能スクロールなので滑らかに出る。
+   音量だけはエンコーダ扱いで、`triggers-per-rotation`（=20）ごとに1回。
+
+   押し込みは 0 でミドルクリック、5 で Surface Dial のボタン。
+
+   **★回転方向は実機で要確認。** 逆なら keymap ではなく
+   `snippets/input-hires-dial/` の DT に `invert` を足す（縦横まとめて反転する。
+   moNa2 は CW で「下」と「左」の両方なので符号の向きは揃っている）
 
 #### Radial Controller は fork を引いて動かしている
 
