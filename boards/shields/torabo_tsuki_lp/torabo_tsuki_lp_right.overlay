@@ -78,7 +78,7 @@
         status = "disabled";
         axis      = <0>;          /* 両軸 — 斜めスクロール可能 */
         layer     = <5>;          /* NUM-SCROLL レイヤー */
-        scale     = <1000>;
+        scale     = <2000>;   /* 慣性出力のみ2倍。Studio 0.25x のままで転がりだけ持ち上げる */
         scale-div = <1000>;
 
         tick = <17>;
