@@ -368,12 +368,12 @@ if (out == 0) {
 
 慣性側のパラメータは以下。`start` / `move` / `min-events` が「大きく弾いたときだけ効かせる」の
 門番です。ここを緩めすぎると小さい動きでも慣性に入り、メリハリが消えます。
-DYA Studio では `dya__inertia` の 11キー (`enabled` + 下表の★印) を再ビルドなしで変えられます。
-設定タブ→書込み→保存→再起動後も維持。`enabled=0` で慣性オフ。
+DYA Studio では `dya__inertia` の 11キー (`0_enabled` + 下表の★印) を再ビルドなしで変えられます。
+設定タブ→書込み→保存→再起動後も維持。`0_enabled` を「無効 (0)」で慣性オフ。
 
 | | 既定 | 本構成 | Studio | 意味 |
 |---|---|---|---|---|
-| `enabled` | — | 1 | ★ | DYA独自。0=オフ、1=オン |
+| `0_enabled` | — | 1 | ★ | DYA独自。ドロップダウンで有効/無効 |
 | `start` | 40 | 40 | ★ | 慣性に入る最低ピーク速度。上げると誤発減 |
 | `move` | 80 | 60 | ★ | 発動に必要な累積移動量。上げると誤発減 |
 | `min-events` | 10 | 8 | — | EMA 収束待ち・ノイズ除去 |
@@ -445,7 +445,7 @@ binding に「defaults are tuned for a **1000 CPI PMW3610 at 125 Hz**」とあ�
 ### Studio で変えた値はリポジトリに残らない
 
 `scroll_runtime_input_processor` の `scale-multiplier` / `scale-divisor`、
-慣性スクロール (`dya__inertia` の 11キー。`enabled` でon/off)、
+慣性スクロール (`dya__inertia` の 11キー。先頭のドロップダウンでon/off)、
 ランタイムコンボ / マクロ / ジェスチャーの内容、BLE のペアリング——これらは
 DYA Studio から実行時に変更でき、**その値は Flash にだけ保存されます。**
 
@@ -458,7 +458,7 @@ DYA Studio から実行時に変更でき、**その値は Flash にだけ保存
 慣性の既定は `torabo_tsuki_lp_right.overlay` の `scroll_inertia_free`
 (`friction=35/limit=900/decay-fast=992/decay-slow=980/decay-tail=975`
 `fast=250/slow=60/start=40/move=60/stop=1`) で、Studio の表示デフォルトと一致します。
-慣性を止めたいときは `dya__inertia` の `enabled` を `0` にします
+慣性を止めたいときは `dya__inertia` 先頭の `0_enabled` を「無効 (0)」にします
 (`start` 上限代用は不要になりました)。
 
 ### レイヤーに `display-name` が無いと DYA Studio のパネルが空欄になる
