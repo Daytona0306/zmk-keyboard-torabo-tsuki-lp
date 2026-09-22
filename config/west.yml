@@ -28,7 +28,7 @@ manifest:
     # 旧 v0.3-branch+dya は Zephyr 3.5 だったのでメジャー更新にあたる。
     - name: zmk
       remote: Daytona0306
-      revision: dya-holdtap-hook  # track: dya-holdtap-hook (TODO: SHA pin after push)
+      revision: e6ffb72d36e221ebb159fda41b5e1caaf538a455  # track: dya-holdtap-hook
       import: app/west.yml
 
     # ── ボード ──────────────────────────────────────────────────
@@ -78,10 +78,10 @@ manifest:
     - name: zmk-driver-hires-dial
       remote: Daytona0306
       revision: 220419580c19a20ed0d979f12a130928c0834f69  # track: zmk-main-endpoints
-    # DYA hold-tap timing ランタイム (Phase2a: RAMのみ)。revision は初回push後にSHA固定する。
+    # DYA hold-tap timing ランタイム (Phase2a: RAMのみ)。
     - name: zmk-feature-holdtap-config
       remote: Daytona0306
-      revision: main  # track: main (TODO: SHA pin)
+      revision: 6931644318d9a13ee56244ccd20937f1130eb856  # track: main
     - name: zmk-feature-cdc-acm-bootloader-trigger
       remote: sekigon-gonnoc
       revision: 37ca1ef9e42d62040387590542585da033d12571  # track: main
