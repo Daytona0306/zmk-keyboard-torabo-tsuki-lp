@@ -371,7 +371,7 @@ if (out == 0) {
 | `start` | 40 | 40 | 慣性に入る最低ピーク速度 |
 | `move` | 80 | 60 | 発動に必要な累積移動量 |
 | `min-events` | 10 | 8 | EMA 収束待ち・ノイズ除去 |
-| `friction` | 35 | 20 | 毎ティックの定数減速（千分率）。下げると伸びる |
+| `friction` | 35 | 35 | 毎ティックの定数減速（千分率）。下げると伸びる |
 | `limit` | 600 | 900 | 速度上限。上げると弾きが伸びる |
 | `gain` / `blend` | 300 / 700 | 同左 | EMA の重み。合計 1000 |
 
@@ -380,10 +380,10 @@ if (out == 0) {
 | | 値 | 意味 |
 |---|---|---|
 | `fast` | 250 | これを超えた速度＝「大きく弾いた」 |
-| `decay-fast` | 998 | 高速域。減りにくい＝長く伸びる |
-| `decay-slow` | 988 | 中速域 |
+| `decay-fast` | 992 | 高速域。減りにくい＝長く伸びる |
+| `decay-slow` | 980 | 中速域 |
 | `slow` | 60 | ここから下がテールゾーン |
-| `decay-tail` | 985 | 止まり際。早めに畳んでダラダラさせない |
+| `decay-tail` | 975 | 止まり際。早めに畳んでダラダラさせない |
 | `span` | 12000 | 慣性継続の安全上限（既定 6000）。`decay-fast` を緩めると自然減衰より先にここで切られる |
 
 速度の目盛りは `start` (40) から `limit` (900) までなので、境界はその間に置きます。
@@ -429,6 +429,7 @@ binding に「defaults are tuned for a **1000 CPI PMW3610 at 125 Hz**」とあ�
 ### Studio で変えた値はリポジトリに残らない
 
 `scroll_runtime_input_processor` の `scale-multiplier` / `scale-divisor`、
+慣性スクロール (`dya__inertia` の 11キー。`enabled` でon/off)、
 ランタイムコンボ / マクロ / ジェスチャーの内容、BLE のペアリング——これらは
 DYA Studio から実行時に変更でき、**その値は Flash にだけ保存されます。**
 
@@ -438,6 +439,11 @@ DYA Studio から実行時に変更でき、**その値は Flash にだけ保存
 
 再設定が必要になることを前提に運用してください。
 気に入った値があるなら、DT 側の既定を実機に合わせて書き換えるのが確実です。
+慣性の既定は `torabo_tsuki_lp_right.overlay:71` の `scroll_inertia_free`
+(`friction=35/limit=900/decay-fast=992/decay-slow=980/decay-tail=975`
+`fast=250/slow=60/start=40/move=60/stop=1`) で、Studio の表示デフォルトと一致します。
+慣性を止めたいときは `dya__inertia` の `enabled` を `0` にします
+(`start` 上限代用は不要になりました)。
 
 ### レイヤーに `display-name` が無いと DYA Studio のパネルが空欄になる
 
