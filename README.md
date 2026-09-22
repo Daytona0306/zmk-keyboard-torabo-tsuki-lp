@@ -78,7 +78,7 @@ tools/west-pins.py && git commit -am "Move pins to current upstream"
 
 | | 本家 `v0.3+dya-studio` | 本構成 |
 |---|---|---|
-| ZMK | `cormoran/zmk` @ `v0.3-branch+dya` | **`cormoran/zmk` @ `main+dya`** |
+| ZMK | `cormoran/zmk` @ `v0.3-branch+dya` | **`Daytona0306/zmk` @ `dya-holdtap-hook`** |
 | Zephyr | 3.5 | **4.1** |
 | ボード | `zmk-component-bmp-boost` @ `v0.2`（HWMv1） | **`master`（HWMv2）** |
 | ワークフロー | `build-user-config.yml@v0.3` | **`@main`** |
@@ -106,6 +106,8 @@ Zephyr 4.1 は HWMv2（`board.yml` を持つ新しいボード定義形式）を
 | `zmk-module-devtool` | スタック使用量 |
 | `zmk-feature-zephyr-setting-expose` | Zephyr settings の閲覧 |
 | `zmk-feature-studio-rpc-perf` | Studio RPC の性能計測 |
+| `zmk-feature-holdtap-config` | hold-tap調整（`dya__holdtap` 8キー。再ビルド不要） |
+| `zmk-feature-inertia-config` | 慣性スクロール調整（`dya__inertia` 11キー。再ビルド不要） |
 
 これらの CONFIG は `snippets/split-central/split-central.conf` にまとめています。
 Studio RPC は central 側でしか動かないためです。
@@ -117,7 +119,7 @@ Studio RPC は central 側でしか動かないためです。
 | `kot149/zmk-scroll-snap` | スクロール方向を軸にスナップ |
 | `shakushakupanda/zmk-mouse-gesture` | マウスジェスチャー（kot149 版のフォーク） |
 | `shakushakupanda/zmk-module-mouse-gesture-rpc` | ジェスチャーを Flash に保存し Web UI から編集 |
-| `mjmjm0101/zmk-input-processor-scroll-inertia` | 慣性スクロール |
+| `mjmjm0101/zmk-input-processor-scroll-inertia` | 慣性スクロール（forkの`dya-inertia-hook`枝を使用。DYA実行時調整hook入り） |
 | `ssbb/zmk-listeners` | レイヤーリスナー |
 
 `zmk-mouse-gesture` が本家 kot149 ではなくフォークなのは、ZMK v0.4 の endpoints API 改名に対応しており、
@@ -126,7 +128,8 @@ DT プロパティと Kconfig は kot149 版から変わっていないので、
 
 ### 4. BLE の安定化設定
 
-長時間使用後に接続が切れる事象への対策として、左右の conf で以下を有効にしています。
+長時間使用後に接続が切れる事象への対策として、左右の board conf
+(`boards/shields/torabo_tsuki_lp/torabo_tsuki_lp_{left,right}.conf:41-43`) で以下を有効にしています。
 
 ```conf
 CONFIG_ZMK_BLE_EXPERIMENTAL_CONN=y
@@ -365,26 +368,32 @@ if (out == 0) {
 
 慣性側のパラメータは以下。`start` / `move` / `min-events` が「大きく弾いたときだけ効かせる」の
 門番です。ここを緩めすぎると小さい動きでも慣性に入り、メリハリが消えます。
+DYA Studio では `dya__inertia` の 11キー (`0_enabled` + 下表の★印) を再ビルドなしで変えられます。
+設定タブ→書込み→保存→再起動後も維持。`0_enabled` を「無効 (0)」で慣性オフ。
 
-| | 既定 | 本構成 | 意味 |
+| | 既定 | 本構成 | Studio | 意味 |
+|---|---|---|---|---|
+| `0_enabled` | — | 1 | ★ | DYA独自。ドロップダウンで有効/無効 |
+| `start` | 40 | 40 | ★ | 慣性に入る最低ピーク速度。上げると誤発減 |
+| `move` | 80 | 60 | ★ | 発動に必要な累積移動量。上げると誤発減 |
+| `min-events` | 10 | 8 | — | EMA 収束待ち・ノイズ除去 |
+| `friction` | 35 | 35 | ★ | 毎ティックの定数減速（千分率）。小弾きの尻尾切り。25〜50刻み |
+| `limit` | 600 | 900 | ★ | 速度上限。上げると大弾きが伸びる |
+| `gain` / `blend` | 300 / 700 | 同左 | — | EMA の重み。合計 1000 |
+| `stop` | 7 | 1 | ★ | 停止しきい値。**下げるほど悪化**（カクつく）。上げる方向で調整 |
+| `scale` / `scale-div` | 1000 / 1000 | 2000 / 1000 | — | 慣性出力倍率。下流scalerと一致させる |
+| `tick` / `release` | 8 / 24 | 17 / 51 | — | tickはセンサー周期に合わせる。releaseは離検出 |
+
+**多段減衰**（速度域ごとに減衰率を変える）はこう入れてあります。いずれも Studio 可。
+
+| | 値 | Studio | 意味 |
 |---|---|---|---|
-| `start` | 40 | 40 | 慣性に入る最低ピーク速度 |
-| `move` | 80 | 60 | 発動に必要な累積移動量 |
-| `min-events` | 10 | 8 | EMA 収束待ち・ノイズ除去 |
-| `friction` | 35 | 20 | 毎ティックの定数減速（千分率）。下げると伸びる |
-| `limit` | 600 | 900 | 速度上限。上げると弾きが伸びる |
-| `gain` / `blend` | 300 / 700 | 同左 | EMA の重み。合計 1000 |
-
-**多段減衰**（速度域ごとに減衰率を変える）はこう入れてあります。
-
-| | 値 | 意味 |
-|---|---|---|
-| `fast` | 250 | これを超えた速度＝「大きく弾いた」 |
-| `decay-fast` | 998 | 高速域。減りにくい＝長く伸びる |
-| `decay-slow` | 988 | 中速域 |
-| `slow` | 60 | ここから下がテールゾーン |
-| `decay-tail` | 985 | 止まり際。早めに畳んでダラダラさせない |
-| `span` | 12000 | 慣性継続の安全上限（既定 6000）。`decay-fast` を緩めると自然減衰より先にここで切られる |
+| `fast` | 250 | ★ | これを超えた速度＝「大きく弾いた」 |
+| `decay-fast` | 992 | ★ | 高速域。990に近いほど伸びる。850で明確に短くなる |
+| `decay-slow` | 980 | ★ | 中速域 |
+| `slow` | 60 | ★ | ここから下がテールゾーン |
+| `decay-tail` | 975 | ★ | 止まり際。早めに畳んでダラダラさせない |
+| `span` | 12000 | — | 慣性継続の安全上限（既定 6000）。`decay-fast` を緩めると自然減衰より先にここで切られる |
 
 速度の目盛りは `start` (40) から `limit` (900) までなので、境界はその間に置きます。
 
@@ -426,9 +435,17 @@ binding に「defaults are tuned for a **1000 CPI PMW3610 at 125 Hz**」とあ�
 思想としては逆を行っています。**斜めや切り返しで引っかかるならここが原因**で、
 対処は上記の `swap-mod` / `unlock-mod` です。
 
+### hold-tap の調整（DYA Studio対応）
+
+`&mt` / `&lt` のタイミングを再ビルドなしで変えられます。
+設定タブ→`dya__holdtap` 8キー：`mt/lt` の `tapping_term_ms`(180) /
+`quick_tap_ms`(300) / `flavor`(1=balanced) / `require_prior_idle_ms`(-1)。
+既定は keymap の `&mt` / `&lt` 実値。保存→再起動後も維持。
+
 ### Studio で変えた値はリポジトリに残らない
 
 `scroll_runtime_input_processor` の `scale-multiplier` / `scale-divisor`、
+慣性スクロール (`dya__inertia` の 11キー。先頭のドロップダウンでon/off)、
 ランタイムコンボ / マクロ / ジェスチャーの内容、BLE のペアリング——これらは
 DYA Studio から実行時に変更でき、**その値は Flash にだけ保存されます。**
 
@@ -438,6 +455,11 @@ DYA Studio から実行時に変更でき、**その値は Flash にだけ保存
 
 再設定が必要になることを前提に運用してください。
 気に入った値があるなら、DT 側の既定を実機に合わせて書き換えるのが確実です。
+慣性の既定は `torabo_tsuki_lp_right.overlay` の `scroll_inertia_free`
+(`friction=35/limit=900/decay-fast=992/decay-slow=980/decay-tail=975`
+`fast=250/slow=60/start=40/move=60/stop=1`) で、Studio の表示デフォルトと一致します。
+慣性を止めたいときは `dya__inertia` 先頭の `0_enabled` を「無効 (0)」にします
+(`start` 上限代用は不要になりました)。
 
 ### レイヤーに `display-name` が無いと DYA Studio のパネルが空欄になる
 
@@ -827,7 +849,7 @@ CONFIG_ZMK_STUDIO_TRANSPORT_BLE=n   # 既定は y
 
 ## ビルド構成
 
-**作るのは3つだけです。** 組み合わせを全部ビルドすると CI 時間を食うので、
+**作るのは常用3つ+検証用2つです。** 組み合わせを全部ビルドすると CI 時間を食うので、
 実際に使う構成だけに絞っています。
 
 | 成果物 | 中身 |
@@ -835,6 +857,7 @@ CONFIG_ZMK_STUDIO_TRANSPORT_BLE=n   # 既定は y
 | `torabo_tsuki_lp_right_central` | 右手 = トラックボール + Studio + キーマップ |
 | `torabo_tsuki_lp_left_peripheral` | 左手 = キーのみ |
 | `settings_reset` | 設定消去 |
+| `torabo_tsuki_lp_dial_pad_*` ×2 | ハード待ち検証用。CIビルドのみ、未実機検証 |
 
 **左右は必ず組で焼いてください。** central 側が Studio・HID・キーマップを持ちます。
 
@@ -866,14 +889,14 @@ right: "studio-rpc-usb-uart split-central input-trackball input-listener
 |---|---|---|
 | 両手にトラックボール | `... input-trackball input-split` | パッドのときと同じ |
 | 左に4方向スイッチ ★左手側専用 | `... kscan-4-direction-switch` | `... kscan-4-direction-switch-central` |
-| 左右を入れ替える | `... split-central input-trackball input-listener` | `studio-rpc-usb-uart` |
-| 左にダイヤル + 拡張基板のパッド ★未検証 | `... input-hires-dial input-ext-trackpad input-ext-split` | `... input-hires-dial-central input-ext-split-listener` |
+| 左右を入れ替える | `... split-central input-trackball input-listener input-scroll-inertia` | `studio-rpc-usb-uart` |
+| 左にダイヤル + 拡張基板のパッド ★未検証 | `... input-hires-dial input-ext-trackpad input-ext-split` | `... split-central input-trackball input-listener input-scroll-inertia input-hires-dial-central input-ext-split-listener` |
 | central 側に拡張基板で2個目 ★未検証 | — | `... input-ext-trackpad input-ext-trackpad-listener` を足す |
 | LED Extender を光らせる | — | `... led-plus` を足す（central 側のみ） |
 
-### 拡張モジュールは片側に1つだけ
+### 拡張モジュールは純正ポート片側に1つだけ
 
-トラックボール・トラックパッド・ハイレゾダイヤル・4方向スイッチの**4つが同じ拡張 FFC ポートを取り合います。**
+トラックボール・トラックパッド・ハイレゾダイヤル・4方向スイッチの**4つが同じ純正拡張 FFC ポートを取り合います。**
 
 | | トラックボール | トラックパッド | ダイヤル | 4方向スイッチ |
 |---|---|---|---|---|
