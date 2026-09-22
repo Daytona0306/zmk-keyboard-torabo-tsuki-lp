@@ -20,6 +20,12 @@
     flavor = "balanced";
 };
 
+&lt {
+    tapping-term-ms = <180>;
+    quick-tap-ms = <300>;
+    flavor = "balanced";
+};
+
 /* DYA Studio 用の「セット番号固定」ジェスチャーキー。
  *
  * Studio はパラメータ付きのカスタム behavior を保持できないため、汎用の
