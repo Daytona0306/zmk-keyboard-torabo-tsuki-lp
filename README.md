@@ -106,6 +106,8 @@ Zephyr 4.1 は HWMv2（`board.yml` を持つ新しいボード定義形式）を
 | `zmk-module-devtool` | スタック使用量 |
 | `zmk-feature-zephyr-setting-expose` | Zephyr settings の閲覧 |
 | `zmk-feature-studio-rpc-perf` | Studio RPC の性能計測 |
+| `zmk-feature-holdtap-config` | hold-tap調整（`dya__holdtap` 8キー。再ビルド不要） |
+| `zmk-feature-inertia-config` | 慣性スクロール調整（`dya__inertia` 11キー。再ビルド不要） |
 
 これらの CONFIG は `snippets/split-central/split-central.conf` にまとめています。
 Studio RPC は central 側でしか動かないためです。
@@ -117,7 +119,7 @@ Studio RPC は central 側でしか動かないためです。
 | `kot149/zmk-scroll-snap` | スクロール方向を軸にスナップ |
 | `shakushakupanda/zmk-mouse-gesture` | マウスジェスチャー（kot149 版のフォーク） |
 | `shakushakupanda/zmk-module-mouse-gesture-rpc` | ジェスチャーを Flash に保存し Web UI から編集 |
-| `mjmjm0101/zmk-input-processor-scroll-inertia` | 慣性スクロール |
+| `mjmjm0101/zmk-input-processor-scroll-inertia` | 慣性スクロール（forkの`dya-inertia-hook`枝を使用。DYA実行時調整hook入り） |
 | `ssbb/zmk-listeners` | レイヤーリスナー |
 
 `zmk-mouse-gesture` が本家 kot149 ではなくフォークなのは、ZMK v0.4 の endpoints API 改名に対応しており、
@@ -365,26 +367,30 @@ if (out == 0) {
 
 慣性側のパラメータは以下。`start` / `move` / `min-events` が「大きく弾いたときだけ効かせる」の
 門番です。ここを緩めすぎると小さい動きでも慣性に入り、メリハリが消えます。
+DYA Studio では `dya__inertia` の 11キー (`enabled` + 下表の★印) を再ビルドなしで変えられます。
+設定タブ→書込み→保存→再起動後も維持。`enabled=0` で慣性オフ。
 
-| | 既定 | 本構成 | 意味 |
+| | 既定 | 本構成 | Studio | 意味 |
+|---|---|---|---|---|
+| `enabled` | — | 1 | ★ | DYA独自。0=オフ、1=オン |
+| `start` | 40 | 40 | ★ | 慣性に入る最低ピーク速度。上げると誤発減 |
+| `move` | 80 | 60 | ★ | 発動に必要な累積移動量。上げると誤発減 |
+| `min-events` | 10 | 8 | — | EMA 収束待ち・ノイズ除去 |
+| `friction` | 35 | 35 | ★ | 毎ティックの定数減速（千分率）。小弾きの尻尾切り。25〜50刻み |
+| `limit` | 600 | 900 | ★ | 速度上限。上げると大弾きが伸びる |
+| `gain` / `blend` | 300 / 700 | 同左 | — | EMA の重み。合計 1000 |
+| `stop` | 7 | 1 | ★ | 停止しきい値。**下げるほど悪化**（カクつく）。上げる方向で調整 |
+
+**多段減衰**（速度域ごとに減衰率を変える）はこう入れてあります。いずれも Studio 可。
+
+| | 値 | Studio | 意味 |
 |---|---|---|---|
-| `start` | 40 | 40 | 慣性に入る最低ピーク速度 |
-| `move` | 80 | 60 | 発動に必要な累積移動量 |
-| `min-events` | 10 | 8 | EMA 収束待ち・ノイズ除去 |
-| `friction` | 35 | 35 | 毎ティックの定数減速（千分率）。下げると伸びる |
-| `limit` | 600 | 900 | 速度上限。上げると弾きが伸びる |
-| `gain` / `blend` | 300 / 700 | 同左 | EMA の重み。合計 1000 |
-
-**多段減衰**（速度域ごとに減衰率を変える）はこう入れてあります。
-
-| | 値 | 意味 |
-|---|---|---|
-| `fast` | 250 | これを超えた速度＝「大きく弾いた」 |
-| `decay-fast` | 992 | 高速域。減りにくい＝長く伸びる |
-| `decay-slow` | 980 | 中速域 |
-| `slow` | 60 | ここから下がテールゾーン |
-| `decay-tail` | 975 | 止まり際。早めに畳んでダラダラさせない |
-| `span` | 12000 | 慣性継続の安全上限（既定 6000）。`decay-fast` を緩めると自然減衰より先にここで切られる |
+| `fast` | 250 | ★ | これを超えた速度＝「大きく弾いた」 |
+| `decay-fast` | 992 | ★ | 高速域。990に近いほど伸びる。850で明確に短くなる |
+| `decay-slow` | 980 | ★ | 中速域 |
+| `slow` | 60 | ★ | ここから下がテールゾーン |
+| `decay-tail` | 975 | ★ | 止まり際。早めに畳んでダラダラさせない |
+| `span` | 12000 | — | 慣性継続の安全上限（既定 6000）。`decay-fast` を緩めると自然減衰より先にここで切られる |
 
 速度の目盛りは `start` (40) から `limit` (900) までなので、境界はその間に置きます。
 
@@ -425,6 +431,13 @@ binding に「defaults are tuned for a **1000 CPI PMW3610 at 125 Hz**」とあ�
 本構成は `axis = <0>`（軸ロック無し）＋ kot149 の `zip_scroll_snap`（＝まさに自動判定）で
 思想としては逆を行っています。**斜めや切り返しで引っかかるならここが原因**で、
 対処は上記の `swap-mod` / `unlock-mod` です。
+
+### hold-tap の調整（DYA Studio対応）
+
+`&mt` / `&lt` のタイミングを再ビルドなしで変えられます。
+設定タブ→`dya__holdtap` 8キー：`mt/lt` の `tapping_term_ms`(180) /
+`quick_tap_ms`(300) / `flavor`(1=balanced) / `require_prior_idle_ms`(-1)。
+既定は keymap の `&mt` / `&lt` 実値。保存→再起動後も維持。
 
 ### Studio で変えた値はリポジトリに残らない
 
