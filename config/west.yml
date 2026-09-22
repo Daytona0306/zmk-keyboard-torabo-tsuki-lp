@@ -85,7 +85,7 @@ manifest:
     # DYA inertia scroll ランタイム (Phase2b: RAM+永続化)。
     - name: zmk-feature-inertia-config
       remote: Daytona0306
-      revision: main  # track: main (TODO: SHA pin after CI)
+      revision: 9e460fa92444d96c9fce33d1179204c3996bb632  # track: main
     - name: zmk-feature-cdc-acm-bootloader-trigger
       remote: sekigon-gonnoc
       revision: 37ca1ef9e42d62040387590542585da033d12571  # track: main
@@ -197,7 +197,7 @@ manifest:
       revision: c240ceaf353d3138bea7695eef17049b7ade995b  # track: v1
     - name: zmk-input-processor-scroll-inertia
       remote: Daytona0306
-      revision: dya-inertia-hook  # track: dya-inertia-hook (TODO: SHA pin after CI)
+      revision: 566dd35382fb04e8999e8f6e01fa5a0eae47369b  # track: dya-inertia-hook
 
     # ── LED (BMP Boost LED Extender) ────────────────────────────
     # 3色LED を叩くウィジェット。snippets/led-plus が使う。
