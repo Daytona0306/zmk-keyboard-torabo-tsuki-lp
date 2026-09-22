@@ -85,7 +85,7 @@ manifest:
     # DYA inertia scroll ランタイム (Phase2b: RAM+永続化)。
     - name: zmk-feature-inertia-config
       remote: Daytona0306
-      revision: 9e460fa92444d96c9fce33d1179204c3996bb632  # track: main
+      revision: 5930975f80745a8ffb32b276fc3f3afd77e461ac  # track: main
     - name: zmk-feature-cdc-acm-bootloader-trigger
       remote: sekigon-gonnoc
       revision: 37ca1ef9e42d62040387590542585da033d12571  # track: main
