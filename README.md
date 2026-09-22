@@ -78,7 +78,7 @@ tools/west-pins.py && git commit -am "Move pins to current upstream"
 
 | | 本家 `v0.3+dya-studio` | 本構成 |
 |---|---|---|
-| ZMK | `cormoran/zmk` @ `v0.3-branch+dya` | **`cormoran/zmk` @ `main+dya`** |
+| ZMK | `cormoran/zmk` @ `v0.3-branch+dya` | **`Daytona0306/zmk` @ `dya-holdtap-hook`** |
 | Zephyr | 3.5 | **4.1** |
 | ボード | `zmk-component-bmp-boost` @ `v0.2`（HWMv1） | **`master`（HWMv2）** |
 | ワークフロー | `build-user-config.yml@v0.3` | **`@main`** |
@@ -128,7 +128,8 @@ DT プロパティと Kconfig は kot149 版から変わっていないので、
 
 ### 4. BLE の安定化設定
 
-長時間使用後に接続が切れる事象への対策として、左右の conf で以下を有効にしています。
+長時間使用後に接続が切れる事象への対策として、左右の board conf
+(`boards/shields/torabo_tsuki_lp/torabo_tsuki_lp_{left,right}.conf:41-43`) で以下を有効にしています。
 
 ```conf
 CONFIG_ZMK_BLE_EXPERIMENTAL_CONN=y
@@ -380,6 +381,8 @@ DYA Studio では `dya__inertia` の 11キー (`enabled` + 下表の★印) を�
 | `limit` | 600 | 900 | ★ | 速度上限。上げると大弾きが伸びる |
 | `gain` / `blend` | 300 / 700 | 同左 | — | EMA の重み。合計 1000 |
 | `stop` | 7 | 1 | ★ | 停止しきい値。**下げるほど悪化**（カクつく）。上げる方向で調整 |
+| `scale` / `scale-div` | 1000 / 1000 | 2000 / 1000 | — | 慣性出力倍率。下流scalerと一致させる |
+| `tick` / `release` | 8 / 24 | 17 / 51 | — | tickはセンサー周期に合わせる。releaseは離検出 |
 
 **多段減衰**（速度域ごとに減衰率を変える）はこう入れてあります。いずれも Studio 可。
 
@@ -452,7 +455,7 @@ DYA Studio から実行時に変更でき、**その値は Flash にだけ保存
 
 再設定が必要になることを前提に運用してください。
 気に入った値があるなら、DT 側の既定を実機に合わせて書き換えるのが確実です。
-慣性の既定は `torabo_tsuki_lp_right.overlay:71` の `scroll_inertia_free`
+慣性の既定は `torabo_tsuki_lp_right.overlay` の `scroll_inertia_free`
 (`friction=35/limit=900/decay-fast=992/decay-slow=980/decay-tail=975`
 `fast=250/slow=60/start=40/move=60/stop=1`) で、Studio の表示デフォルトと一致します。
 慣性を止めたいときは `dya__inertia` の `enabled` を `0` にします
@@ -846,7 +849,7 @@ CONFIG_ZMK_STUDIO_TRANSPORT_BLE=n   # 既定は y
 
 ## ビルド構成
 
-**作るのは3つだけです。** 組み合わせを全部ビルドすると CI 時間を食うので、
+**作るのは常用3つ+検証用2つです。** 組み合わせを全部ビルドすると CI 時間を食うので、
 実際に使う構成だけに絞っています。
 
 | 成果物 | 中身 |
@@ -854,6 +857,7 @@ CONFIG_ZMK_STUDIO_TRANSPORT_BLE=n   # 既定は y
 | `torabo_tsuki_lp_right_central` | 右手 = トラックボール + Studio + キーマップ |
 | `torabo_tsuki_lp_left_peripheral` | 左手 = キーのみ |
 | `settings_reset` | 設定消去 |
+| `torabo_tsuki_lp_dial_pad_*` ×2 | ハード待ち検証用。CIビルドのみ、未実機検証 |
 
 **左右は必ず組で焼いてください。** central 側が Studio・HID・キーマップを持ちます。
 
@@ -885,14 +889,14 @@ right: "studio-rpc-usb-uart split-central input-trackball input-listener
 |---|---|---|
 | 両手にトラックボール | `... input-trackball input-split` | パッドのときと同じ |
 | 左に4方向スイッチ ★左手側専用 | `... kscan-4-direction-switch` | `... kscan-4-direction-switch-central` |
-| 左右を入れ替える | `... split-central input-trackball input-listener` | `studio-rpc-usb-uart` |
-| 左にダイヤル + 拡張基板のパッド ★未検証 | `... input-hires-dial input-ext-trackpad input-ext-split` | `... input-hires-dial-central input-ext-split-listener` |
+| 左右を入れ替える | `... split-central input-trackball input-listener input-scroll-inertia` | `studio-rpc-usb-uart` |
+| 左にダイヤル + 拡張基板のパッド ★未検証 | `... input-hires-dial input-ext-trackpad input-ext-split` | `... split-central input-trackball input-listener input-scroll-inertia input-hires-dial-central input-ext-split-listener` |
 | central 側に拡張基板で2個目 ★未検証 | — | `... input-ext-trackpad input-ext-trackpad-listener` を足す |
 | LED Extender を光らせる | — | `... led-plus` を足す（central 側のみ） |
 
-### 拡張モジュールは片側に1つだけ
+### 拡張モジュールは純正ポート片側に1つだけ
 
-トラックボール・トラックパッド・ハイレゾダイヤル・4方向スイッチの**4つが同じ拡張 FFC ポートを取り合います。**
+トラックボール・トラックパッド・ハイレゾダイヤル・4方向スイッチの**4つが同じ純正拡張 FFC ポートを取り合います。**
 
 | | トラックボール | トラックパッド | ダイヤル | 4方向スイッチ |
 |---|---|---|---|---|
