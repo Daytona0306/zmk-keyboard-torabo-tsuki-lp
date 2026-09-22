@@ -81,7 +81,7 @@ manifest:
     # DYA hold-tap timing ランタイム (Phase2a: RAMのみ)。
     - name: zmk-feature-holdtap-config
       remote: Daytona0306
-      revision: 6931644318d9a13ee56244ccd20937f1130eb856  # track: main
+      revision: 1e39720b80fa00a826b551c1bc7b09d24acd6094  # track: main
     - name: zmk-feature-cdc-acm-bootloader-trigger
       remote: sekigon-gonnoc
       revision: 37ca1ef9e42d62040387590542585da033d12571  # track: main
