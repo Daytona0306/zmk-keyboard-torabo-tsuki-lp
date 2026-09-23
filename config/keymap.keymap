@@ -15,15 +15,17 @@
 #include "gestures.dtsi"
 
 &mt {
-    tapping-term-ms = <180>;
+    tapping-term-ms = <150>;
     quick-tap-ms = <300>;
-    flavor = "balanced";
+    flavor = "tap-preferred";
+    require-prior-idle-ms = <125>;
 };
 
 &lt {
-    tapping-term-ms = <180>;
+    tapping-term-ms = <150>;
     quick-tap-ms = <300>;
-    flavor = "balanced";
+    flavor = "tap-preferred";
+    require-prior-idle-ms = <125>;
 };
 
 /* DYA Studio 用の「セット番号固定」ジェスチャーキー。
@@ -201,7 +203,7 @@
 &trans  &lt 12 Q          &lt 9 L   &lt 11 U  &lt 8 COMMA                  &lt 10 PERIOD                                           &kp F        &kp W   &kp R    &kp Y            &kp P                       &trans
 &trans  &mt LCTRL E       &kp I     &lt 7 A   &lt 4 O                      &kp MINUS      &trans                      &trans      &kp K        &kp T   &lt 7 N  &kp S            &kp H                       &trans
 &trans  &mt LEFT_SHIFT Z  &kp X     &kp C     &kp V                        &kp SEMICOLON  &kp LA(LG(K))               &kp C_MUTE  &kp G        &kp D   &kp M    &mt RIGHT_ALT J  &lt 4 B                     &trans
-&trans  &kp LEFT_ALT      &kp LGUI  &kp TAB   &mt LEFT_SHIFT INT_MUHENKAN  &lt 5 ENTER    &mt LEFT_CONTROL BACKSPACE  &lt 3 DEL   &lt 2 SPACE  &trans  &trans   &kp RIGHT_ALT    &mt RIGHT_SHIFT INT_HENKAN  &trans
+&trans  &kp LEFT_ALT      &kp LGUI  &kp TAB   &mt LEFT_SHIFT INT_MUHENKAN  &lt 5 ENTER    &mt LEFT_CONTROL BACKSPACE  &lt 3 DEL   &lt 2 SPACE  &trans  &trans   &kp LC(F13)      &mt RIGHT_SHIFT INT_HENKAN  &trans
 #if defined(TORABO_TSUKI_LP_KSCAN_4_DIRECTION_SWITCH)
 /* 4方向スイッチ: 上 下 左 右 押し込み (snippets/kscan-4-direction-switch)。
  * スニペットを指定しないビルドではこの5個は存在しない。 */
