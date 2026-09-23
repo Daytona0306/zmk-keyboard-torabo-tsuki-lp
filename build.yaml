@@ -73,15 +73,16 @@ include:
   # ── ★ハード待ち: 左にダイヤル + 拡張基板のパッド ──────────────────
   # 実機はまだ組んでいない。CI でビルドが通ることだけを確認している。
   # 焼くときは必ずこの2つを組で焼くこと (マトリクス変換の行数が変わる)。
-  - board: bmp_boost
-    shield: torabo_tsuki_lp_left
-    snippet: "studio-rpc-usb-uart input-hires-dial input-ext-trackpad input-ext-split"
-    artifact-name: torabo_tsuki_lp_dial_pad_left_peripheral
+  # ── 表示用ブランチでは下2件を無効化 (keymap の #if 除去のため数が合わない)。本線に戻さないこと。
+  # - board: bmp_boost
+  #   shield: torabo_tsuki_lp_left
+  #   snippet: "studio-rpc-usb-uart input-hires-dial input-ext-trackpad input-ext-split"
+  #   artifact-name: torabo_tsuki_lp_dial_pad_left_peripheral
 
-  - board: bmp_boost
-    shield: torabo_tsuki_lp_right
-    snippet: "studio-rpc-usb-uart split-central input-trackball input-listener input-scroll-inertia input-hires-dial-central input-ext-split-listener"
-    artifact-name: torabo_tsuki_lp_dial_pad_right_central
+  # - board: bmp_boost
+  #   shield: torabo_tsuki_lp_right
+  #   snippet: "studio-rpc-usb-uart split-central input-trackball input-listener input-scroll-inertia input-hires-dial-central input-ext-split-listener"
+  #   artifact-name: torabo_tsuki_lp_dial_pad_right_central
 
   - board: bmp_boost
     shield: settings_reset
