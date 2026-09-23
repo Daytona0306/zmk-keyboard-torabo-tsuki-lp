@@ -202,3 +202,161 @@
 &trans  &mt LCTRL E       &kp I     &lt 7 A   &lt 4 O                      &kp MINUS      &trans                      &trans      &kp K        &kp T   &lt 7 N  &kp S            &kp H                       &trans
 &trans  &mt LEFT_SHIFT Z  &kp X     &kp C     &kp V                        &kp SEMICOLON  &kp LA(LG(K))               &kp C_MUTE  &kp G        &kp D   &kp M    &mt RIGHT_ALT J  &lt 4 B                     &trans
 &trans  &kp LEFT_ALT      &kp LGUI  &kp TAB   &mt LEFT_SHIFT INT_MUHENKAN  &lt 5 ENTER    &mt LEFT_CONTROL BACKSPACE  &lt 3 DEL   &lt 2 SPACE  &trans  &trans   &kp RIGHT_ALT    &mt RIGHT_SHIFT INT_HENKAN  &trans
+>;
+        };
+
+        /* index 1: iPad / iOS 用ベースレイヤー。
+         *
+         * default-layer モジュールは常時 ON のレイヤー0を落とさずに、この
+         * レイヤーを上に重ねる (src/default_layer.c の apply_layer が
+         * global_default を deactivate 対象から外している)。
+         * よって差分だけ書けばよく、&trans はレイヤー0に落ちる。
+         *
+         * 置き場所が 1 なのは必然。ZMK はキー押下時にインデックスの高い
+         * レイヤーから順に探すため (keymap.c の
+         * zmk_keymap_position_state_changed)、末尾に置くと常時 ON の
+         * このレイヤーがモーメンタリなレイヤーを全部上書きしてしまう。
+         * 実際、末尾 (12) に置いた版では MOUSE レイヤーの &to 0 が潰れて
+         * レイヤーから抜けられなくなっていた。
+         * レイヤー0の直上に置けば、上の 2..12 が正しく優先される。
+         *
+         * Windows との違い:
+         *   - Ctrl と Cmd を入れ替え (コピペ等を Cmd 側に寄せる)
+         *   - IME 切替を 無変換/変換 から 英数(LANG2)/かな(LANG1) へ
+         *
+         * DYA Studio の「OS ごとのデフォルトレイヤー」で iOS → 12 を
+         * 割り当てると、iPad に接続したときだけ自動で有効になる。 */
+        iPad {
+            display-name = "iPad";
+            bindings = <
+&trans  &trans      &trans      &trans  &trans                &trans                                        &trans  &trans  &trans  &trans  &trans                &trans
+&trans  &trans      &trans      &trans  &trans                &trans                                        &trans  &trans  &trans  &trans  &trans                &trans
+&trans  &mt LGUI E  &trans      &trans  &trans                &trans  &trans                  &trans  &trans  &trans  &trans  &trans  &trans                 &trans
+&trans  &trans      &trans      &trans  &trans                &trans  &trans                  &trans  &trans  &trans  &trans  &trans  &trans                 &trans
+&trans  &trans      &kp LCTRL   &trans  &mt LEFT_SHIFT LANG2  &trans  &mt LEFT_GUI BACKSPACE  &trans  &trans  &trans  &trans  &trans  &mt RIGHT_SHIFT LANG1  &trans
+>;
+        };
+
+        NUM,SYM1 {
+            display-name = "NUM/SYM1";
+            bindings = <
+&trans  &trans                    &trans                    &trans           &trans                     &trans                                          &trans         &trans                &trans             &trans                &trans          &trans
+&trans  &kp NUMBER_1              &kp NUMBER_2              &kp NUMBER_3     &kp NUMBER_4               &kp N5                                          &kp NUMBER_6   &kp N7                &kp N8             &kp N9                &kp N0          &trans
+&trans  &kp EQUAL                 &kp LEFT_BRACKET          &kp SLASH        &kp MINUS                  &kp LS(INTERNATIONAL_1)  &trans         &trans  &kp SEMICOLON  &kp SQT               &kp RIGHT_BRACKET  &kp BACKSLASH         &kp INT_YEN     &trans
+&trans  &kp LS(LA(LC(NUMBER_2)))  &kp LS(LC(LA(NUMBER_6)))  &kp PRINTSCREEN  &kp LS(LG(S))              &kp LA(PRINTSCREEN)      &kp LG(LS(V))  &trans  &kp CAPSLOCK   &kp LS(LC(NUMBER_2))  &kp LS(LC(I))      &kp LS(LC(NUMBER_1))  &kp SCROLLLOCK  &trans
+&trans  &trans                    &trans                    &trans           &mt LEFT_SHIFT LANGUAGE_1  &kp LG(LS(V))            &trans         &trans  &trans         &trans                &trans             &trans                &to 4           &trans
+>;
+        };
+
+        SYM2 {
+            display-name = "SYM2";
+            bindings = <
+&trans  &trans             &trans              &trans            &trans                     &trans                                          &trans                  &trans                   &trans                 &trans                      &trans                       &trans
+&trans  &kp LS(NUMBER_1)   &kp LS(NUMBER_2)    &kp LS(NUMBER_3)  &kp LS(NUMBER_4)           &kp LS(N5)                                      &kp LS(NUMBER_6)        &kp LS(N7)               &kp LS(N8)             &kp LS(N9)                  &kp LS(N0)                   &trans
+&trans  &kp LS(EQUAL)      &kp LS(LEFT_BRACE)  &kp QUESTION      &kp LS(UNDERSCORE)         &kp LS(INTERNATIONAL_1)  &trans         &trans  &kp LS(SEMICOLON)       &kp LS(SQT)              &kp LS(RIGHT_BRACKET)  &kp LS(BACKSLASH)           &kp LS(INT_YEN)              &trans
+&trans  &kp LS(LA(MINUS))  &trans              &trans            &BrowsToExploree           &rmacro 0                      &kp LG(LA(U))  &trans  &kp LC(LG(LEFT_ARROW))  &kp LC(LG(RIGHT_ARROW))  &kp LA(LC(LG(D)))      &kp LC(LA(LG(LEFT_ARROW)))  &kp LA(LC(LG(RIGHT_ARROW)))  &trans
+&trans  &trans             &trans              &trans            &mt LEFT_SHIFT LANGUAGE_2  &trans                   &trans         &trans  &trans                  &trans                   &trans                 &trans                      &kp LC(LG(F4))               &trans
+>;
+        };
+
+        MOUSE {
+            display-name = "Mouse";
+            bindings = <
+&trans  &trans      &trans        &trans            &trans        &trans                        &trans      &trans        &trans           &trans    &trans    &trans
+&trans  &kp ESCAPE  &kp N7        &kp N8            &kp N9        &trans                        &kp C_MUTE  &kp C_VOL_DN  &kp C_VOLUME_UP  &trans    &trans    &trans
+&trans  &kp EQUAL   &kp NUMBER_4  &kp N5            &kp NUMBER_6  &kp KP_MINUS  &trans  &trans  &mkp MB5    &trans        &mo 5            &trans    &mkp MB5  &trans
+&trans  &kp N0      &kp NUMBER_1  &kp NUMBER_2      &kp NUMBER_3  &kp KP_PLUS   &trans  &trans  &mkp MB4    &mkp MB1      &mkp MB3         &mkp MB2  &mkp MB4  &trans
+&trans  &kp DOT     &kp COMMA     &kp LEFT_BRACKET  &trans        &trans        &trans  &trans  &trans      &trans        &trans           &to 0     &to 0     &trans
+>;
+        };
+
+        NUM-SCROLL {
+            display-name = "Scroll";
+            bindings = <
+&trans  &trans      &trans            &trans            &trans            &trans                  &trans              &trans        &trans        &trans        &trans           &trans
+&trans  &trans      &kp LC(N7)        &kp LC(N8)        &kp LC(N9)        &trans                  &kp LANGUAGE_2      &kp N7        &kp N8        &kp N9        &kp KP_SLASH     &trans
+&trans  &trans      &kp LC(NUMBER_4)  &kp LC(N5)        &kp LC(NUMBER_6)  &trans  &trans  &trans  &kp LS(UNDERSCORE)  &kp NUMBER_4  &kp N5        &kp NUMBER_6  &kp KP_MULTIPLY  &trans
+&trans  &kp LC(N0)  &kp LC(NUMBER_1)  &kp LC(NUMBER_2)  &kp LC(NUMBER_3)  &trans  &trans  &trans  &kp N0              &kp NUMBER_1  &kp NUMBER_2  &kp NUMBER_3  &kp KP_MINUS     &trans
+&trans  &trans      &trans            &trans            &trans            &trans  &trans  &trans  &kp DOT             &trans        &trans        &trans        &kp KP_PLUS      &trans
+>;
+        };
+
+        bluetooth {
+            display-name = "Bluetooth";
+            bindings = <
+&trans  &trans         &trans         &trans         &trans          &trans                               &trans  &trans  &trans  &trans  &trans          &trans
+&trans  &bt BT_SEL 0   &bt BT_SEL 1   &bt BT_SEL 2   &bt BT_SEL 3    &bt BT_SEL 4                         &trans  &trans  &trans  &trans  &trans          &trans
+&trans  &bt BT_DISC 0  &bt BT_DISC 1  &bt BT_DISC 2  &bt BT_DISC 3   &bt BT_DISC 4  &trans        &trans  &trans  &trans  &trans  &trans  &trans          &trans
+&trans  &bt BT_SEL 5   &bt BT_SEL 6   &trans         &studio_unlock  &out OUT_BLE   &out OUT_USB  &trans  &trans  &trans  &trans  &trans  &bootloader     &trans
+&trans  &bt BT_DISC 5  &bt BT_DISC 6  &trans         &trans          &trans         &bt BT_CLR    &trans  &trans  &trans  &trans  &trans  &bt BT_CLR_ALL  &trans
+>;
+        };
+
+        gest_arrow {
+            display-name = "Gest: Arrow";
+            bindings = <
+&trans  &trans   &trans  &trans   &trans   &trans                   &trans         &trans          &trans          &trans           &trans             &trans
+&trans  &kp ESC  &kp F1  &kp F2   &kp F3   &kp F4                   &kp INS        &kp HOME        &kp UP_ARROW    &kp END          &kp PG_UP          &trans
+&trans  &trans   &kp F5  &kp F6   &kp F7   &kp F8   &trans  &trans  &kp LC(TAB)    &kp LEFT_ARROW  &kp UP_ARROW    &kp RIGHT_ARROW  &kp PAGE_DOWN      &trans
+&trans  &trans   &kp F9  &kp F10  &kp F11  &kp F12  &trans  &trans  &kp LG(LS(V))  &kp LEFT_ARROW  &kp DOWN_ARROW  &kp RIGHT_ARROW  &kp LC(LG(LA(V)))  &trans
+&trans  &trans   &trans  &trans   &trans   &trans   &trans  &trans  &trans         &trans          &trans          &trans           &trans             &trans
+>;
+        };
+
+        gest_tab {
+            display-name = "Gest: Tab";
+            bindings = <
+&trans  &trans  &trans  &trans  &trans  &trans                  &trans  &trans  &trans  &trans  &trans  &trans
+&trans  &trans  &trans  &trans  &trans  &trans                  &trans  &trans  &trans  &trans  &trans  &trans
+&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
+&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
+&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
+>;
+        };
+
+        gest_vdesktop {
+            display-name = "Gest: VDesktop";
+            bindings = <
+&trans  &trans  &trans  &trans  &trans  &trans                  &trans  &trans  &trans  &trans  &trans  &trans
+&trans  &trans  &trans  &trans  &trans  &trans                  &trans  &trans  &trans  &trans  &trans  &trans
+&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
+&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
+&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
+>;
+        };
+
+        gest_nav {
+            display-name = "Gest: Nav";
+            bindings = <
+&trans  &trans  &trans  &trans  &trans  &trans                  &trans  &trans  &trans  &trans  &trans  &trans
+&trans  &trans  &trans  &trans  &trans  &trans                  &trans  &trans  &trans  &trans  &trans  &trans
+&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
+&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
+&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
+>;
+        };
+
+        gest_window {
+            display-name = "Gest: Window";
+            bindings = <
+&trans  &trans  &trans  &trans  &trans  &trans                  &trans  &trans  &trans  &trans  &trans  &trans
+&trans  &trans  &trans  &trans  &trans  &trans                  &trans  &trans  &trans  &trans  &trans  &trans
+&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
+&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
+&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
+>;
+        };
+
+        gest_powertoys {
+            display-name = "Gest: PowerToys";
+            bindings = <
+&trans  &trans  &trans  &trans  &trans  &trans                  &trans  &trans  &trans  &trans  &trans  &trans
+&trans  &trans  &trans  &trans  &trans  &trans                  &trans  &trans  &trans  &trans  &trans  &trans
+&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
+&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
+&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
+>;
+        };
+
+    };
+};
