@@ -78,10 +78,10 @@ manifest:
     - name: zmk-driver-hires-dial
       remote: Daytona0306
       revision: 220419580c19a20ed0d979f12a130928c0834f69  # track: zmk-main-endpoints
-    # DYA hold-tap timing ランタイム。idle DT seedはidle-dt-seed枝で検証中。
+    # DYA hold-tap timing ランタイム。
     - name: zmk-feature-holdtap-config
       remote: Daytona0306
-      revision: 4b0d4f01a1780acf6a99b453f5d7e8d71fef555d  # track: idle-dt-seed
+      revision: 4b0d4f01a1780acf6a99b453f5d7e8d71fef555d  # track: main
     # DYA inertia scroll ランタイム (Phase2b: RAM+永続化)。
     - name: zmk-feature-inertia-config
       remote: Daytona0306
