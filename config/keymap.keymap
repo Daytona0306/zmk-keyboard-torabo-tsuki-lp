@@ -292,8 +292,8 @@
 #endif
 >;
 #if defined(TORABO_TSUKI_LP_INPUT_HIRES_DIAL)
-            /* moNa2: scroll_up_down */
-            sensor-bindings = <&hires_dial_radial_controller 4 1>;
+            /* moNa2: scroll_up_down。Base(4 1)の4倍速。 */
+            sensor-bindings = <&hires_dial_scroll 1 1>;
 #endif
         };
 
