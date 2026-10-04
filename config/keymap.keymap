@@ -338,12 +338,8 @@
 #endif
 >;
 #if defined(TORABO_TSUKI_LP_INPUT_HIRES_DIAL)
-            /* ★このレイヤーだけ moNa2 と違う (moNa2 は scroll_right_left)。
-             * Windows の Radial Controller (Surface Dial)。
-             * <4 1> は物理回転を 1/4 に縮めて送る。
-             * Windows 以外では何も起きない。
-             * 押し込みも Surface Dial のボタンになる (上の bindings 参照)。 */
-            sensor-bindings = <&hires_dial_radial_controller 4 1>;
+            /* moNa2 の scroll_right_left に合わせる。Base と同じ 1/4 速。 */
+            sensor-bindings = <&hires_dial_hscroll 4 1>;
 #endif
         };
 
