@@ -215,7 +215,7 @@
 >;
 #if defined(TORABO_TSUKI_LP_INPUT_HIRES_DIAL)
             /* Base: 上下スクロール。 */
-            sensor-bindings = <&hires_dial_scroll 1 1>;
+            sensor-bindings = <&hires_dial_scroll 4 1>;
 #endif
         };
 
