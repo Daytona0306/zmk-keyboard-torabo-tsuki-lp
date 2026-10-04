@@ -3,15 +3,17 @@
 #
 #      torabo_tsuki_lp_right_central   右手 = トラックボール + Studio + キーマップ
 #      torabo_tsuki_lp_left_peripheral 左手 = キーのみ
+#      torabo_tsuki_lp_dial_right_central   右手 = 上記 + ダイヤル受け (拡張基板なし)
+#      torabo_tsuki_lp_dial_left_peripheral 左手 = キー + ダイヤル (拡張基板なし)
 #      settings_reset                  設定消去
 #
 #  ★未実装ハード待ち (ビルド確認のみ。実機で焼いていない)
-#      ..._dial_pad_right_central      右手 = 上記 + ダイヤル受け + パッド受け
+#      ..._dial_pad_right_central      右手 = ダイヤル受け + パッド受け
 #      ..._dial_pad_left_peripheral    左手 = キー + ダイヤル + 拡張基板のパッド
 #
 #  左右は必ず組で焼くこと。central 側が Studio・HID・キーマップを持つ。
 #  ★組を跨いで混ぜないこと★ ダイヤルを足すとマトリクス変換が1行伸びるので、
-#  片側だけ dial_pad 版にすると押した位置がずれる。
+#  無印組・dial組・dial_pad組を混ぜると押した位置がずれる。
 #
 #  組み合わせを全部ビルドすると CI 時間を食うので、実際に使う構成だけに絞っている。
 #  スニペットは全部リポジトリに残してあるので、snippet 行の差し替えだけで戻せる。
@@ -69,6 +71,18 @@ include:
     shield: torabo_tsuki_lp_left
     snippet: studio-rpc-usb-uart
     artifact-name: torabo_tsuki_lp_left_peripheral
+
+  # ── 左にダイヤルのみ (拡張基板なし・今回の実機) ──────────────
+  # 焼くときは必ずこの2つを組で焼くこと (マトリクス変換の行数が変わる)。
+  - board: bmp_boost
+    shield: torabo_tsuki_lp_left
+    snippet: "studio-rpc-usb-uart input-hires-dial"
+    artifact-name: torabo_tsuki_lp_dial_left_peripheral
+
+  - board: bmp_boost
+    shield: torabo_tsuki_lp_right
+    snippet: "studio-rpc-usb-uart split-central input-trackball input-listener input-scroll-inertia input-hires-dial-central"
+    artifact-name: torabo_tsuki_lp_dial_right_central
 
   # ── ★ハード待ち: 左にダイヤル + 拡張基板のパッド ──────────────────
   # 実機はまだ組んでいない。CI でビルドが通ることだけを確認している。
