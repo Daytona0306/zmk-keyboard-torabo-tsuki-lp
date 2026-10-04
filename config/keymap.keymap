@@ -209,8 +209,8 @@
  * スニペットを指定しないビルドではこの5個は存在しない。 */
 &msc SCRL_UP  &msc SCRL_DOWN  &msc SCRL_LEFT  &msc SCRL_RIGHT  &mkp MCLK
 #elif defined(TORABO_TSUKI_LP_INPUT_HIRES_DIAL)
-/* ダイヤル押し込み = マイクミュート (Win+Alt+K)。C_MUTE はスピーカー側なので使わない。 */
-&kp LA(LG(K))
+/* 検証中: 全レイヤーの押し込みを Radial ボタンに統一。マイクミュートは後で戻す。 */
+&hires_dial_radial_controller_button
 #endif
 >;
 #if defined(TORABO_TSUKI_LP_INPUT_HIRES_DIAL)
