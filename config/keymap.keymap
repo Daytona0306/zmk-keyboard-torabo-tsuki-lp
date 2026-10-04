@@ -209,8 +209,8 @@
  * スニペットを指定しないビルドではこの5個は存在しない。 */
 &msc SCRL_UP  &msc SCRL_DOWN  &msc SCRL_LEFT  &msc SCRL_RIGHT  &mkp MCLK
 #elif defined(TORABO_TSUKI_LP_INPUT_HIRES_DIAL)
-/* ダイヤル押し込み = マイクミュート。 */
-&kp C_MUTE
+/* ダイヤル押し込み = マイクミュート (Win+Alt+K)。C_MUTE はスピーカー側なので使わない。 */
+&kp LA(LG(K))
 #endif
 >;
 #if defined(TORABO_TSUKI_LP_INPUT_HIRES_DIAL)
@@ -327,12 +327,12 @@
 #endif
 >;
 #if defined(TORABO_TSUKI_LP_INPUT_HIRES_DIAL)
-            /* moNa2: rsr_vol (CW = 音量を下げる)。
+            /* moNa2: rsr_vol (CW = 音量を上げる)。
              * 第1引数が CW、第2引数が CCW
              * (behavior_hires_dial_encoder.c: triggers > 0 なら param1)。
              * これだけエンコーダ扱いで、triggers-per-rotation (=20) ごとに
              * 1回キーが飛ぶ。 */
-            sensor-bindings = <&hires_dial_encoder C_VOL_DN C_VOL_UP>;
+            sensor-bindings = <&hires_dial_encoder C_VOL_UP C_VOL_DN>;
 #endif
         };
 
