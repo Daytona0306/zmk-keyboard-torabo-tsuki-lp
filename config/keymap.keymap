@@ -202,15 +202,15 @@
 &trans  &trans            &trans    &trans    &trans                       &trans                                                 &trans       &trans  &trans   &trans           &trans                      &trans
 &trans  &lt 12 Q          &lt 9 L   &lt 11 U  &lt 8 COMMA                  &lt 10 PERIOD                                           &kp F        &kp W   &kp R    &kp Y            &kp P                       &trans
 &trans  &mt LCTRL E       &kp I     &lt 7 A   &lt 4 O                      &kp MINUS      &trans                      &trans      &kp K        &kp T   &lt 7 N  &kp S            &kp H                       &trans
-&trans  &mt LEFT_SHIFT Z  &kp X     &kp C     &kp V                        &kp SEMICOLON  &kp LA(LG(K))               &kp C_MUTE  &kp G        &kp D   &kp M    &mt RIGHT_ALT J  &lt 4 B                     &trans
+&trans  &mt LEFT_SHIFT Z  &kp X     &kp C     &kp V                        &kp SEMICOLON  &none               &kp LA(LG(K))  &kp G        &kp D   &kp M    &mt RIGHT_ALT J  &lt 4 B                     &trans
 &trans  &kp LEFT_ALT      &kp LGUI  &kp TAB   &mt LEFT_SHIFT INT_MUHENKAN  &lt 5 ENTER    &mt LEFT_CONTROL BACKSPACE  &lt 3 DEL   &lt 2 SPACE  &trans  &trans   &kp LC(F13)      &mt RIGHT_SHIFT INT_HENKAN  &trans
 #if defined(TORABO_TSUKI_LP_KSCAN_4_DIRECTION_SWITCH)
 /* 4方向スイッチ: 上 下 左 右 押し込み (snippets/kscan-4-direction-switch)。
  * スニペットを指定しないビルドではこの5個は存在しない。 */
 &msc SCRL_UP  &msc SCRL_DOWN  &msc SCRL_LEFT  &msc SCRL_RIGHT  &mkp MCLK
 #elif defined(TORABO_TSUKI_LP_INPUT_HIRES_DIAL)
-/* ダイヤル押し込み = マイクミュート (Win+Alt+K)。 */
-&kp LA(LG(K))
+/* ダイヤル押し込み = 音量ミュート。 */
+&kp C_MUTE
 #endif
 >;
 #if defined(TORABO_TSUKI_LP_INPUT_HIRES_DIAL)
@@ -268,12 +268,13 @@
 #if defined(TORABO_TSUKI_LP_KSCAN_4_DIRECTION_SWITCH)
 &trans  &trans  &trans  &trans  &trans
 #elif defined(TORABO_TSUKI_LP_INPUT_HIRES_DIAL)
-&trans
+/* NUM層の押し込み = 音量ミュート。 */
+&kp C_MUTE
 #endif
 >;
 #if defined(TORABO_TSUKI_LP_INPUT_HIRES_DIAL)
-            /* moNa2: scroll_right_left (CW = 左方向) */
-            sensor-bindings = <&hires_dial_radial_controller 4 1>;
+            /* 縦スクロール (Base と同速)。 */
+            sensor-bindings = <&hires_dial_scroll 4 1>;
 #endif
         };
 
@@ -288,12 +289,13 @@
 #if defined(TORABO_TSUKI_LP_KSCAN_4_DIRECTION_SWITCH)
 &trans  &trans  &trans  &trans  &trans
 #elif defined(TORABO_TSUKI_LP_INPUT_HIRES_DIAL)
-&trans
+/* SYM2層の押し込み = 音量ミュート。 */
+&kp C_MUTE
 #endif
 >;
 #if defined(TORABO_TSUKI_LP_INPUT_HIRES_DIAL)
-            /* moNa2: scroll_up_down */
-            sensor-bindings = <&hires_dial_radial_controller 4 1>;
+            /* moNa2: scroll_up_down。Base(4 1)の4倍速。 */
+            sensor-bindings = <&hires_dial_scroll 1 1>;
 #endif
         };
 
@@ -308,16 +310,13 @@
 #if defined(TORABO_TSUKI_LP_KSCAN_4_DIRECTION_SWITCH)
 &trans  &trans  &trans  &trans  &trans
 #elif defined(TORABO_TSUKI_LP_INPUT_HIRES_DIAL)
-&trans
+/* MOUSE層の押し込み = 音量ミュート。 */
+&kp C_MUTE
 #endif
 >;
 #if defined(TORABO_TSUKI_LP_INPUT_HIRES_DIAL)
-            /* moNa2: rsr_vol (CW = 音量を上げる)。
-             * 第1引数が CW、第2引数が CCW
-             * (behavior_hires_dial_encoder.c: triggers > 0 なら param1)。
-             * これだけエンコーダ扱いで、triggers-per-rotation (=20) ごとに
-             * 1回キーが飛ぶ。 */
-            sensor-bindings = <&hires_dial_radial_controller 4 1>;
+            /* 音量調節 (CW = 上げる)。 */
+            sensor-bindings = <&hires_dial_encoder C_VOL_UP C_VOL_DN>;
 #endif
         };
 
@@ -332,18 +331,13 @@
 #if defined(TORABO_TSUKI_LP_KSCAN_4_DIRECTION_SWITCH)
 &trans  &trans  &trans  &trans  &trans
 #elif defined(TORABO_TSUKI_LP_INPUT_HIRES_DIAL)
-/* このレイヤーはダイヤルが Radial Controller なので、押し込みも
- * Surface Dial のボタン (メニュー開閉) として送る。 */
-&hires_dial_radial_controller_button
+/* Scroll層の押し込み = 音量ミュート。 */
+&kp C_MUTE
 #endif
 >;
 #if defined(TORABO_TSUKI_LP_INPUT_HIRES_DIAL)
-            /* ★このレイヤーだけ moNa2 と違う (moNa2 は scroll_right_left)。
-             * Windows の Radial Controller (Surface Dial)。
-             * <4 1> は物理回転を 1/4 に縮めて送る。
-             * Windows 以外では何も起きない。
-             * 押し込みも Surface Dial のボタンになる (上の bindings 参照)。 */
-            sensor-bindings = <&hires_dial_radial_controller 4 1>;
+            /* moNa2 の scroll_right_left に合わせる。Base と同じ 1/4 速。 */
+            sensor-bindings = <&hires_dial_hscroll 4 1>;
 #endif
         };
 
@@ -363,8 +357,8 @@
 #endif
 >;
 #if defined(TORABO_TSUKI_LP_INPUT_HIRES_DIAL)
-            /* moNa2: scroll_up_down */
-            sensor-bindings = <&hires_dial_radial_controller 4 1>;
+            /* 縦スクロール (Base と同速)。 */
+            sensor-bindings = <&hires_dial_scroll 4 1>;
 #endif
         };
 
