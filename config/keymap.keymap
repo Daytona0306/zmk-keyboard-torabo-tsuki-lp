@@ -209,8 +209,8 @@
  * スニペットを指定しないビルドではこの5個は存在しない。 */
 &msc SCRL_UP  &msc SCRL_DOWN  &msc SCRL_LEFT  &msc SCRL_RIGHT  &mkp MCLK
 #elif defined(TORABO_TSUKI_LP_INPUT_HIRES_DIAL)
-/* ダイヤル押し込み = ホイールクリック。 */
-&mkp MCLK
+/* ダイヤル押し込み = マイクミュート。 */
+&kp C_MUTE
 #endif
 >;
 #if defined(TORABO_TSUKI_LP_INPUT_HIRES_DIAL)
