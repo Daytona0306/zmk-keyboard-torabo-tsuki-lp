@@ -5,3 +5,9 @@
 &scroll_inertia_free {
     status = "okay";
 };
+
+/* ズームの段送りも同じ理由 (HID API を使う) で central 専用。
+ * チェーン上で慣性の直前に並んでいるので、組で有効化する。 */
+&zip_zoom_step {
+    status = "okay";
+};

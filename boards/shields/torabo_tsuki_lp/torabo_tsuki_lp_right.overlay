@@ -129,6 +129,28 @@
     };
 };
 
+/* Ctrl / Cmd + ボールのズームを1ノッチ単位にまとめる (src/input_processor_zoom_step.c)。
+ *
+ * スムーススクロールのせいでボールは 1/16 ノッチ程度のホイールを大量に送る。
+ * スクロールは合計量で動くので気にならないが、PDF ビューア等のズームは
+ * 「イベント1回 = 1段」で数えるため効きすぎる。ダイヤルは
+ * &hires_dial_scroll 4 1 でちょうど1ノッチずつ送っているので問題が出ない。
+ *
+ * scroll_inertia_free と同じく central 専用なので既定は無効にし、
+ * input-scroll-inertia snippet で有効化する。
+ * ★scroll_inertia_free より前に置くこと★ 修飾キー押下中のホイールは
+ * ここで止めるので、ズーム中に弾いても慣性が arm されない。 */
+/ {
+    zip_zoom_step: zip_zoom_step {
+        compatible = "zmk,input-processor-zoom-step";
+        #input-processor-cells = <0>;
+        status = "disabled";
+        /* 0 = ホストの1ノッチ (Windows なら 16 カウント)。
+         * ズームが速ければ大きく、遅ければ小さくする。 */
+        counts-per-step = <0>;
+    };
+};
+
 &pointing_listener {
     input-processors = 
 	    <&zip_xy_transform (INPUT_TRANSFORM_X_INVERT | INPUT_TRANSFORM_Y_INVERT)>,
@@ -136,6 +158,7 @@
 		<&mouse_runtime_input_processor>,
 		<&scroll_runtime_input_processor>,
 		<&zip_scroll_snap>,
+		<&zip_zoom_step>,
             <&scroll_inertia_free>;
 };
 

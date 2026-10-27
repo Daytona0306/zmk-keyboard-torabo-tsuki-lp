@@ -14,3 +14,14 @@
 # 上流のボードが宣言するまでの回避として既定値を与える。
 config ZMK_BOARD_COMPAT
     default y if BOARD_BMP_BOOST
+
+# Ctrl / Cmd + トラックボールのズーム用段送り (src/input_processor_zoom_step.c)。
+# HID の API を使うので central (または非スプリット) のみ。
+# DT ノードは torabo_tsuki_lp_right.overlay にあり、既定は disabled。
+# input-scroll-inertia snippet が有効化する。
+config ZMK_INPUT_PROCESSOR_ZOOM_STEP
+    bool
+    default y
+    depends on DT_HAS_ZMK_INPUT_PROCESSOR_ZOOM_STEP_ENABLED
+    depends on ZMK_POINTING
+    depends on !ZMK_SPLIT || ZMK_SPLIT_ROLE_CENTRAL

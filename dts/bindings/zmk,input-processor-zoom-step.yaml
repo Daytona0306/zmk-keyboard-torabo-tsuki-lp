@@ -1,0 +1,48 @@
+# SPDX-License-Identifier: MIT
+
+description: |
+  Ctrl / Cmd を押している間だけ、ホイールを「1ノッチ = 1イベント」に
+  まとめ直して送る入力プロセッサ。
+
+  スムーススクロール (CONFIG_ZMK_POINTING_SMOOTH_SCROLLING) 下では
+  トラックボールが 1/16 ノッチ程度の細かいホイールを大量に送る。
+  スクロールは合計量で動くので問題ないが、PDF ビューア等の
+  Ctrl+ホイールのズームは「イベント1回 = 1段」で数えるものが多く、
+  少し転がしただけで何十段も拡大縮小してしまう。
+
+  修飾キーが押されている間は WHEEL / HWHEEL を貯めて、しきい値を
+  超えるたびにちょうど1ノッチ分の値を1レポートとして自分で送る。
+  元のイベントは ZMK_INPUT_PROC_STOP で止めるので、後段の
+  scroll-inertia にも届かず、ズーム中に慣性が arm されることもない。
+  修飾キーを離せば素通しに戻る。
+
+  HID の API を使うので central 専用。
+
+compatible: "zmk,input-processor-zoom-step"
+
+include: ip_zero_param.yaml
+
+properties:
+  mods:
+    type: int
+    default: 0x99
+    description: |
+      これらの修飾キーのどれかが押されている間だけ段送りにする。
+      <dt-bindings/zmk/modifiers.h> の MOD_* を OR する。
+      既定 0x99 = MOD_LCTL | MOD_LGUI | MOD_RCTL | MOD_RGUI
+      (Windows の Ctrl+ホイール と macOS / iPadOS の Cmd+ホイール)。
+
+  counts-per-step:
+    type: int
+    default: 0
+    description: |
+      何カウント貯まったら1段送るか。0 なら「ホストが今ネゴシエート
+      しているホイールの1ノッチ」(Resolution Multiplier。Windows なら 16)
+      を使う。ズームが速すぎるなら大きく、遅すぎるなら小さくする。
+
+  idle-timeout-ms:
+    type: int
+    default: 300
+    description: |
+      この時間ホイールが来なければ貯めていた端数を捨てる。
+      ボールを止めた後に、次の微小な動きで1段だけ飛ぶのを防ぐ。
