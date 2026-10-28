@@ -200,7 +200,7 @@ manifest:
     #   right.overlay の scroll_inertia_free で pause-mod を使っている。
     - name: zmk-input-processor-scroll-inertia
       remote: Daytona0306
-      revision: cb6409d9e4511583af0b7bf43e813f1c740b275c  # track: ccr-e2781b20-71g98d
+      revision: cb6409d9e4511583af0b7bf43e813f1c740b275c  # track: dya-inertia-hook
 
     # ── LED (BMP Boost LED Extender) ────────────────────────────
     # 3色LED を叩くウィジェット。snippets/led-plus が使う。
