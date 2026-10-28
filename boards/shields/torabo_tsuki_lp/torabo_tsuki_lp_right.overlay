@@ -78,6 +78,11 @@
         status = "disabled";
         axis      = <0>;          /* 両軸 — 斜めスクロール可能 */
         layer     = <5>;          /* NUM-SCROLL レイヤー */
+        /* Ctrl / Cmd 押下中は慣性を止める (流れている最中のものも次の tick で止まる)。
+         * ズームは「レポート1回 = 1段」で数えるので、慣性が流れるとズームが
+         * 止まらなくなる。zip_zoom_step の mods と揃えること。
+         * 0x99 = MOD_LCTL | MOD_LGUI | MOD_RCTL | MOD_RGUI */
+        pause-mod = <0x99>;
         scale     = <2000>;   /* 慣性出力のみ2倍。Studio 0.25x のままで転がりだけ持ち上げる */
         scale-div = <1000>;
 
