@@ -195,13 +195,12 @@ manifest:
     - name: zmk-listeners
       remote: ssbb
       revision: c240ceaf353d3138bea7695eef17049b7ade995b  # track: v1
-    # ★未適用パッチあり★ tools/scroll-inertia-pause-mod.patch (pause-mod)。
+    # dya-inertia-hook + pause-mod (tools/scroll-inertia-pause-mod.patch)。
     #   慣性が流れている最中に Ctrl を押すとズームが暴走する穴を塞ぐ。
-    #   fork に当てて revision を更新したら、right.overlay の
-    #   scroll_inertia_free に pause-mod = <0x99>; を足すこと。
+    #   right.overlay の scroll_inertia_free で pause-mod を使っている。
     - name: zmk-input-processor-scroll-inertia
       remote: Daytona0306
-      revision: 566dd35382fb04e8999e8f6e01fa5a0eae47369b  # track: dya-inertia-hook
+      revision: cb6409d9e4511583af0b7bf43e813f1c740b275c  # track: dya-inertia-hook
 
     # ── LED (BMP Boost LED Extender) ────────────────────────────
     # 3色LED を叩くウィジェット。snippets/led-plus が使う。
