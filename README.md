@@ -124,7 +124,7 @@ Studio RPC は central 側でしか動かないためです。
 
 `zmk-mouse-gesture` が本家 kot149 ではなくフォークなのは、ZMK v0.4 の endpoints API 改名に対応しており、
 ジェスチャー入力中にカーソルが動くのを抑制する機能が入っているためです。
-DT プロパティと Kconfig は kot149 版から変わっていないので、`config/gestures.dtsi` はそのまま使えます。
+DT プロパティと Kconfig は kot149 版から変わっていないので、`zmk-dya-common` の `dts/dya-common/gestures.dtsi` はそのまま使えます。
 
 ### 4. BLE の安定化設定
 
@@ -187,7 +187,7 @@ BLE が不安定なときに「OS 誤判定なのかどうか」の切り分け�
 **レイヤー番号は複数のファイルに散らばっています。**順序を変えるときは以下すべてを追従させてください。
 
 * `config/keymap.keymap` の `&lt` / `&mo` / `&to`
-* `config/gestures.dtsi` の `GESTURE_ROUTE(N, ...)`
+* keymap 冒頭の `DYA_GESTURE_BASE_LAYER`（ジェスチャー6枚の先頭。定義本体は `zmk-dya-common` の `gestures.dtsi`）
 * `boards/shields/torabo_tsuki_lp/torabo_tsuki_lp_right.overlay` の
   `active-layers = <BIT(N)>` と慣性スクロールの `layer`
 * `snippets/split-central/split-central.conf` の `CONFIG_ZMK_DEFAULT_LAYER_MIN/MAX_INDEX`
@@ -198,7 +198,7 @@ BLE が不安定なときに「OS 誤判定なのかどうか」の切り分け�
 
 2系統が併存しています。
 
-### DT 定義（`config/gestures.dtsi`）
+### DT 定義（`zmk-dya-common` の `dts/dya-common/gestures.dtsi`）
 
 レイヤーごとに専用のプロセッサを置き、レイヤー移動でセットを切り替えます。
 
@@ -252,7 +252,7 @@ return g_suppress_cursor ? ZMK_INPUT_PROC_STOP : ZMK_INPUT_PROC_CONTINUE;
 
 `g_suppress_cursor` は `&mouse_gesture_on` でも立つため、メインチェーンに置くと**全レイヤーでカーソルが停止**します。
 
-対策として `config/gestures.dtsi` では `layer_listeners` による ON/OFF をやめ、各プロセッサに `always-active` を
+対策として `zmk-dya-common` の `dts/dya-common/gestures.dtsi` では `layer_listeners` による ON/OFF をやめ、各プロセッサに `always-active` を
 付けています。プロセッサはいずれも `route_lN` のチェーンにしか存在せず、そのレイヤーでしか入力を受け取らないため、
 レイヤー連動の体感は変わりません。これにより `g_suppress_cursor` は `&mg_set` を押したときだけ立つようになります。
 
@@ -496,7 +496,7 @@ for (int layer_idx = ZMK_KEYMAP_LAYERS_LEN - 1;
 
 ベースレイヤーはレイヤー0の直上（index 1）に置き、ファンクションレイヤーはその上に並べます。
 既存のレイヤー番号をずらすことになるので、`&lt` / `&mo` / `&to` に加えて
-`config/gestures.dtsi` の `GESTURE_ROUTE()`、`torabo_tsuki_lp_right.overlay` の
+keymap 冒頭の `DYA_GESTURE_BASE_LAYER`、`torabo_tsuki_lp_right.overlay` の
 `active-layers = <BIT(N)>` と慣性スクロールの `layer`、
 `CONFIG_ZMK_DEFAULT_LAYER_MIN/MAX_INDEX` を**すべて**追従させる必要があります。
 

@@ -12,7 +12,11 @@
 /* &mg_set N (0..NUM_SETS-1) を提供。押している間だけ RPC 側のセットが有効になる。
  * ただし Studio からは割り当てられないので、下の mg_set_0/1/2 を使うこと。 */
 #include <mouse-gesture-rpc.dtsi>
-#include "gestures.dtsi"
+/* ジェスチャー定義は機種共通 (zmk-dya-common)。機種差はこの2つだけ。
+ * BASE_LAYER は矢印ジェスチャーのレイヤー番号で、そこから連番で6枚使う。 */
+#define DYA_GESTURE_LISTENER   pointing_listener
+#define DYA_GESTURE_BASE_LAYER 7
+#include <dya-common/gestures.dtsi>
 
 &mt {
     tapping-term-ms = <180>;

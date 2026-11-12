@@ -177,7 +177,7 @@ manifest:
     # ── スクロール / ジェスチャー ───────────────────────────────
     - name: zmk-scroll-snap
       remote: kot149
-      revision: a0002b36dcb8b6d85c9aab7d6ad1ebcee6bc7c97  # track: v1
+      revision: 62a669c32353576df18d6f835ccb2133e2238e1d  # track: v1
     # kot149/v1 の上に7コミット。ZMK v0.4 の endpoints API 改名対応と、
     # ジェスチャー入力中にカーソルが動くのを抑制する機能が入っている。
     # DT プロパティと Kconfig は kot149/v1 から変わっておらず
@@ -210,5 +210,9 @@ manifest:
     - name: zmk-rgbled-widget
       remote: caksoylar
       revision: e6b467792a1dabef8cfa5c9fd26bfefc9c16662b  # track: main
+    # ── 機種共通の定義 (ジェスチャーなど)。moNa2 / torabo-tsuki LP / 小人キーで共有 ──
+    - name: zmk-dya-common
+      remote: Daytona0306
+      revision: e4cf8c2fe5816a291b76187c69792a9cfdd27773  # track: ccr-18c0f811-gen3zl
   self:
     path: config
