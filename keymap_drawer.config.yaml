@@ -1,0 +1,20 @@
+# keymap-drawer 設定 (https://github.com/caksoylar/keymap-drawer)
+# draw.yml から `keymap -c keymap_drawer.config.yaml parse/draw` に渡される。
+parse_config:
+  # keymap 側の独自 behavior は keymap-drawer が解釈できないため、表示ラベルを直接指定する。
+  raw_binding_map:
+    "&bootloader": {t: Boot, h: loader}
+    "&studio_unlock": Studio
+    "&soft_off": Soft Off
+    "&Left_Right_Click": {t: L+R, h: Click}
+    "&BrowsToExploree": {t: Brows, h: Explorer}
+    "&rmacro 0": {t: Macro, h: rec/play}
+    "&mkp MB1": {t: Mouse, h: L Click}
+    "&mkp MB2": {t: Mouse, h: R Click}
+    "&mkp MB3": {t: Mouse, h: M Click}
+    "&mkp MB4": {t: Mouse, h: Back}
+    "&mkp MB5": {t: Mouse, h: Fwd}
+draw_config:
+  # コンボは各レイヤー上に重ねず、別図として出力する (キーに重なって読めなくなるため)。
+  separate_combo_diagrams: true
+  key_w: 66

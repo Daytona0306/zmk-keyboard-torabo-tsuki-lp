@@ -1,0 +1,28 @@
+name: Draw ZMK keymap
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "config/*.keymap"
+      - "config/info.json"
+      - "keymap_drawer.config.yaml"
+      - ".github/workflows/draw.yml"
+
+jobs:
+  draw:
+    # 再利用ワークフローはコミット SHA で固定 (west.yml の方針に合わせる)
+    uses: caksoylar/keymap-drawer/.github/workflows/draw-zmk.yml@467abe2a2fee3a1ec1658d8c3fe33d1cc562b53c
+    permissions:
+      contents: write # keymap-drawer/ を push したブランチへコミットするために必要
+    with:
+      keymap_patterns: "config/keymap.keymap"
+      # config/keymap.json は無いので、既存の config/info.json を明示指定する
+      draw_args: "keymap:'-j config/info.json'"
+      config_path: "keymap_drawer.config.yaml"
+      output_folder: "keymap-drawer"
+      install_version: "0.23.0"
+      commit_message: "[Draw] keymap 図を更新"
+      amend_commit: false
+      destination: "commit"
+      fail_on_error: true
