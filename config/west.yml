@@ -213,6 +213,6 @@ manifest:
     # ── 機種共通の定義 (ジェスチャーなど)。moNa2 / torabo-tsuki LP / 小人キーで共有 ──
     - name: zmk-dya-common
       remote: Daytona0306
-      revision: e4cf8c2fe5816a291b76187c69792a9cfdd27773  # track: ccr-18c0f811-gen3zl
+      revision: e4cf8c2fe5816a291b76187c69792a9cfdd27773  # track: main
   self:
     path: config
