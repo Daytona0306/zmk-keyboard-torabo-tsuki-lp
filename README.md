@@ -450,6 +450,11 @@ binding に「defaults are tuned for a **1000 CPI PMW3610 at 125 Hz**」とあ�
 `quick_tap_ms`(300) / `flavor`(1=balanced) / `require_prior_idle_ms`(-1)。
 既定は keymap の `&mt` / `&lt` 実値。保存→再起動後も維持。
 
+ただし A・N・Q・L・U・`,`・`.`（文字キーの長押しでジェスチャーレイヤーに入るキー）は
+`&lt` ではなく専用の `&lt_gest`（長押し 250ms / 直前の打鍵から 200ms 以内ならタップ）で、
+ここでは変えられません（keymap を書き換えて焼く）。速く打ったときに「ni」の N の長押しで
+レイヤー 7 の F5 が出て、ページが再読み込みされていたため、文字キーだけ誤爆しにくくしています。
+
 ### Studio で変えた値はリポジトリに残らない
 
 `scroll_runtime_input_processor` の `scale-multiplier` / `scale-divisor`、
