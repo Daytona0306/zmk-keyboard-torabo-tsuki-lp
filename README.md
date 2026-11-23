@@ -6,7 +6,8 @@
 トラックボール周りを拡張したものです。
 
 * `_central` がついている uf2 をトラックボールがついている方に、`_peripheral` を反対側に書き込んでください
-* キーマップは keymap-editor および ZMK Studio / DYA Studio で編集できます
+* キーマップは DYA Studio で編集できます (Flash に保存。ファイルにも残すなら `config/keymap.keymap` に書き写す)。
+  keymap-editor は GitHub 連携が終わったので使っていません。図は下の「キーマップ」を見てください
 
 ---
 
