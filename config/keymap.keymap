@@ -158,14 +158,24 @@
          * cleanup() を呼んで取り込んだイベントを流すので、普通に U を打つぶんには
          * タイムアウトを待たされない。長押しでレイヤーに入るときだけ
          * timeout-ms 分だけ遅れる (200 + 80 = 280ms)。 */
+        /* 押した瞬間に Ctrl+Alt+Tab を1回だけ送る (macros の ctrl_alt_tab_once)。
+         * &kp LA(LC(TAB)) のままだと押しっぱなしでキーリピートがかかり、
+         * 切り替え画面の選択が右へ流れていった。 */
         combo_ctrl_alt_tab {
             key-positions = <15 16>;
-            bindings = <&kp LA(LC(TAB))>;
+            bindings = <&ctrl_alt_tab_once>;
             timeout-ms = <80>;
         };
     };
 
     macros {
+        ctrl_alt_tab_once: ctrl_alt_tab_once {
+            compatible = "zmk,behavior-macro";
+            #binding-cells = <0>;
+            label = "CTRL_ALT_TAB_ONCE";
+            bindings = <&macro_tap &kp LC(LA(TAB))>;
+        };
+
         BrowsToExploree: BrowsToExploree {
             compatible = "zmk,behavior-macro";
             #binding-cells = <0>;
