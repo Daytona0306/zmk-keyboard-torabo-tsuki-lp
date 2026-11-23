@@ -301,11 +301,11 @@ layers:
   - KP MINUS
   - {t: ▽, type: trans}
   - {t: ▽, type: trans}
-  - {t: Mouse, h: Fwd}
+  - {t: ▽, type: trans}
   - {t: ▽, type: trans}
   - Scroll
   - {t: ▽, type: trans}
-  - {t: Mouse, h: Fwd}
+  - {t: ▽, type: trans}
   - {t: ▽, type: trans}
   - {t: ▽, type: trans}
   - '0'
@@ -315,11 +315,11 @@ layers:
   - KP PLUS
   - {t: ▽, type: trans}
   - {t: ▽, type: trans}
-  - {t: Mouse, h: Back}
+  - AC BACK
   - {t: Mouse, h: L Click}
   - {t: Mouse, h: M Click}
   - {t: Mouse, h: R Click}
-  - {t: Mouse, h: Back}
+  - AC FORWARD
   - {t: ▽, type: trans}
   - {t: ▽, type: trans}
   - .

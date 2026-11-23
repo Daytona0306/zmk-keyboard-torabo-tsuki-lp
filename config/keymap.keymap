@@ -309,13 +309,15 @@
 #endif
         };
 
+        /* 戻る/進むはマウスボタン (MB4/MB5) ではなく、キーボードの戻る/進むキー (C_AC_BACK / C_AC_FORWARD)。
+         * MB4/MB5 は PC 側のジェスチャーソフトに割り当てていて、別の操作になるため。 */
         MOUSE {
             display-name = "Mouse";
             bindings = <
 &trans  &trans      &trans        &trans            &trans        &trans                        &trans      &trans        &trans           &trans    &trans    &trans
 &trans  &kp ESCAPE  &kp N7        &kp N8            &kp N9        &trans                        &kp C_MUTE  &kp C_VOL_DN  &kp C_VOLUME_UP  &trans    &trans    &trans
-&trans  &kp EQUAL   &kp NUMBER_4  &kp N5            &kp NUMBER_6  &kp KP_MINUS  &trans  &trans  &mkp MB5    &trans        &mo 5            &trans    &mkp MB5  &trans
-&trans  &kp N0      &kp NUMBER_1  &kp NUMBER_2      &kp NUMBER_3  &kp KP_PLUS   &trans  &trans  &mkp MB4    &mkp MB1      &mkp MB3         &mkp MB2  &mkp MB4  &trans
+&trans  &kp EQUAL   &kp NUMBER_4  &kp N5            &kp NUMBER_6  &kp KP_MINUS  &trans  &trans  &trans         &trans        &mo 5            &trans    &trans            &trans
+&trans  &kp N0      &kp NUMBER_1  &kp NUMBER_2      &kp NUMBER_3  &kp KP_PLUS   &trans  &trans  &kp C_AC_BACK  &mkp MB1      &mkp MB3         &mkp MB2  &kp C_AC_FORWARD  &trans
 &trans  &kp DOT     &kp COMMA     &kp LEFT_BRACKET  &trans        &trans        &trans  &trans  &trans      &trans        &trans           &to 0     &to 0     &trans
 #if defined(TORABO_TSUKI_LP_KSCAN_4_DIRECTION_SWITCH)
 &trans  &trans  &trans  &trans  &trans
