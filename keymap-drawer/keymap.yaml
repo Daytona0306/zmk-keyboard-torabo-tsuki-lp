@@ -889,4 +889,4 @@ combos:
 - p: [48, 49]
   k: Scroll
 - p: [15, 16]
-  k: Alt+Ctl+TAB
+  k: '&ctrl_alt_tab_once'
