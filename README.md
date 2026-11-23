@@ -12,6 +12,14 @@
 
 未着手・未確認の事項は [TODO.md](TODO.md) に分けてあります。
 
+## キーマップ
+
+全 13 レイヤーとコンボの図です。`config/keymap.keymap` を push すると GitHub Actions
+(`.github/workflows/draw.yml`) が keymap-drawer で作り直し、同じブランチへ自動でコミットします。
+4方向スイッチ・ダイヤルの分 (スニペット指定時だけ有効) は図に含めていません。
+
+![torabo-tsuki LP のキーマップ](keymap-drawer/keymap.svg)
+
 ## ブランチ運用
 
 **焼く uf2 は必ず `main` の artifacts から取ってください。**
