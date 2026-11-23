@@ -12,6 +12,14 @@
 
 未着手・未確認の事項は [TODO.md](TODO.md) に分けてあります。
 
+## キーマップ
+
+全 13 レイヤーとコンボの図です。`config/keymap.keymap` を push すると GitHub Actions
+(`.github/workflows/draw.yml`) が keymap-drawer で作り直し、同じブランチへ自動でコミットします。
+4方向スイッチ・ダイヤルの分 (スニペット指定時だけ有効) は図に含めていません。
+
+![torabo-tsuki LP のキーマップ](keymap-drawer/keymap.svg)
+
 ## ブランチ運用
 
 **焼く uf2 は必ず `main` の artifacts から取ってください。**
@@ -441,6 +449,11 @@ binding に「defaults are tuned for a **1000 CPI PMW3610 at 125 Hz**」とあ�
 設定タブ→`dya__holdtap` 8キー：`mt/lt` の `tapping_term_ms`(180) /
 `quick_tap_ms`(300) / `flavor`(1=balanced) / `require_prior_idle_ms`(-1)。
 既定は keymap の `&mt` / `&lt` 実値。保存→再起動後も維持。
+
+ただし A・N・Q・L・U・`,`・`.`（文字キーの長押しでジェスチャーレイヤーに入るキー）は
+`&lt` ではなく専用の `&lt_gest`（長押し 250ms / 直前の打鍵から 200ms 以内ならタップ）で、
+ここでは変えられません（keymap を書き換えて焼く）。速く打ったときに「ni」の N の長押しで
+レイヤー 7 の F5 が出て、ページが再読み込みされていたため、文字キーだけ誤爆しにくくしています。
 
 ### Studio で変えた値はリポジトリに残らない
 

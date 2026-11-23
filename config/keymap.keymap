@@ -158,14 +158,24 @@
          * cleanup() を呼んで取り込んだイベントを流すので、普通に U を打つぶんには
          * タイムアウトを待たされない。長押しでレイヤーに入るときだけ
          * timeout-ms 分だけ遅れる (200 + 80 = 280ms)。 */
+        /* 押した瞬間に Ctrl+Alt+Tab を1回だけ送る (macros の ctrl_alt_tab_once)。
+         * &kp LA(LC(TAB)) のままだと押しっぱなしでキーリピートがかかり、
+         * 切り替え画面の選択が右へ流れていった。 */
         combo_ctrl_alt_tab {
             key-positions = <15 16>;
-            bindings = <&kp LA(LC(TAB))>;
+            bindings = <&ctrl_alt_tab_once>;
             timeout-ms = <80>;
         };
     };
 
     macros {
+        ctrl_alt_tab_once: ctrl_alt_tab_once {
+            compatible = "zmk,behavior-macro";
+            #binding-cells = <0>;
+            label = "CTRL_ALT_TAB_ONCE";
+            bindings = <&macro_tap &kp LC(LA(TAB))>;
+        };
+
         BrowsToExploree: BrowsToExploree {
             compatible = "zmk,behavior-macro";
             #binding-cells = <0>;
@@ -183,6 +193,26 @@
     };
 
     behaviors {
+        /* 文字キーの長押しでジェスチャーレイヤー (7〜12) に入るキー用の layer-tap。
+         * A・N・Q・L・U・,・. に使う。親指 (Space/Del/Enter) と O/B (Mouse) は &lt のまま。
+         *
+         * 文字キーは打鍵中に頻繁に出るので、&lt より誤爆しにくい側に倒している。
+         * 例: 寿司打で「ni」の N を少し長めに押すと、レイヤー 7 の I の位置の F5 が出て
+         * ページが再読み込みされていた (小人キー Daytona0306/KobitoKey_QWERTY と同じ設定)。
+         *   - tapping-term 250ms: これより短く離せばタップ (tap-preferred なので押している長さだけで決まる)
+         *   - require-prior-idle 200ms: 直前の打鍵から 200ms 以内に押したら、長押し判定をせずタップに確定
+         * DYA Studio の dya__holdtap (mt/lt だけが対象) では変えられない。変えるときはここを書き換えて焼く。 */
+        lt_gest: lt_gest {
+            compatible = "zmk,behavior-hold-tap";
+            display-name = "Layer-Tap (Gesture)";
+            #binding-cells = <2>;
+            bindings = <&mo>, <&kp>;
+            flavor = "tap-preferred";
+            tapping-term-ms = <250>;
+            quick-tap-ms = <300>;
+            require-prior-idle-ms = <200>;
+        };
+
         lt_to_layer_0: lt_to_layer_0 {
             compatible = "zmk,behavior-hold-tap";
             label = "LAYER_TAP_TO_0";
@@ -200,8 +230,8 @@
             display-name = "Base (Win)";
             bindings = <
 &trans  &trans            &trans    &trans    &trans                       &trans                                                 &trans       &trans  &trans   &trans           &trans                      &trans
-&trans  &lt 12 Q          &lt 9 L   &lt 11 U  &lt 8 COMMA                  &lt 10 PERIOD                                           &kp F        &kp W   &kp R    &kp Y            &kp P                       &trans
-&trans  &mt LCTRL E       &kp I     &lt 7 A   &lt 4 O                      &kp MINUS      &trans                      &trans      &kp K        &kp T   &lt 7 N  &kp S            &kp H                       &trans
+&trans  &lt_gest 12 Q      &lt_gest 9 L  &lt_gest 11 U  &lt_gest 8 COMMA             &lt_gest 10 PERIOD                                           &kp F        &kp W   &kp R    &kp Y            &kp P                       &trans
+&trans  &mt LCTRL E       &kp I     &lt_gest 7 A  &lt 4 O                      &kp MINUS      &trans                      &trans      &kp K        &kp T   &lt_gest 7 N  &kp S            &kp H                       &trans
 &trans  &mt LEFT_SHIFT Z  &kp X     &kp C     &kp V                        &kp SEMICOLON  &none               &kp LA(LG(K))  &kp G        &kp D   &kp M    &mt RIGHT_ALT J  &lt 4 B                     &trans
 &trans  &kp LEFT_ALT      &kp LGUI  &kp TAB   &mt LEFT_SHIFT INT_MUHENKAN  &lt 5 ENTER    &mt LEFT_CONTROL BACKSPACE  &lt 3 DEL   &lt 2 SPACE  &trans  &trans   &kp LC(F13)      &mt RIGHT_SHIFT INT_HENKAN  &trans
 #if defined(TORABO_TSUKI_LP_KSCAN_4_DIRECTION_SWITCH)
@@ -299,13 +329,15 @@
 #endif
         };
 
+        /* 戻る/進むはマウスボタン (MB4/MB5) ではなく、キーボードの戻る/進むキー (C_AC_BACK / C_AC_FORWARD)。
+         * MB4/MB5 は PC 側のジェスチャーソフトに割り当てていて、別の操作になるため。 */
         MOUSE {
             display-name = "Mouse";
             bindings = <
 &trans  &trans      &trans        &trans            &trans        &trans                        &trans      &trans        &trans           &trans    &trans    &trans
 &trans  &kp ESCAPE  &kp N7        &kp N8            &kp N9        &trans                        &kp C_MUTE  &kp C_VOL_DN  &kp C_VOLUME_UP  &trans    &trans    &trans
-&trans  &kp EQUAL   &kp NUMBER_4  &kp N5            &kp NUMBER_6  &kp KP_MINUS  &trans  &trans  &mkp MB5    &trans        &mo 5            &trans    &mkp MB5  &trans
-&trans  &kp N0      &kp NUMBER_1  &kp NUMBER_2      &kp NUMBER_3  &kp KP_PLUS   &trans  &trans  &mkp MB4    &mkp MB1      &mkp MB3         &mkp MB2  &mkp MB4  &trans
+&trans  &kp EQUAL   &kp NUMBER_4  &kp N5            &kp NUMBER_6  &kp KP_MINUS  &trans  &trans  &trans         &trans        &mo 5            &trans    &trans            &trans
+&trans  &kp N0      &kp NUMBER_1  &kp NUMBER_2      &kp NUMBER_3  &kp KP_PLUS   &trans  &trans  &kp C_AC_BACK  &mkp MB1      &mkp MB3         &mkp MB2  &kp C_AC_FORWARD  &trans
 &trans  &kp DOT     &kp COMMA     &kp LEFT_BRACKET  &trans        &trans        &trans  &trans  &trans      &trans        &trans           &to 0     &to 0     &trans
 #if defined(TORABO_TSUKI_LP_KSCAN_4_DIRECTION_SWITCH)
 &trans  &trans  &trans  &trans  &trans
